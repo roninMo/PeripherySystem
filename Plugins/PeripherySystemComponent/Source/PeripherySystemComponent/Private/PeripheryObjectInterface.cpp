@@ -4,9 +4,9 @@
 #include "PeripheryObjectInterface.h"
 
 
-void IPeripheryObjectInterface::OnEnterRadiusPeriphery(ACharacter* SourceCharacter, EPeripheryType PeripheryType) {}
-void IPeripheryObjectInterface::OnExitRadiusPeriphery(ACharacter* SourceCharacter, EPeripheryType PeripheryType) {}
-void IPeripheryObjectInterface::OnEnterConePeriphery(ACharacter* SourceCharacter, EPeripheryType PeripheryType) {}
-void IPeripheryObjectInterface::OnExitConePeriphery(ACharacter* SourceCharacter, EPeripheryType PeripheryType) {}
-void IPeripheryObjectInterface::OnEnterLineTracePeriphery(ACharacter* SourceCharacter, EPeripheryType PeripheryType) {}
-void IPeripheryObjectInterface::OnExitLineTracePeriphery(ACharacter* SourceCharacter, EPeripheryType PeripheryType) {}
+void IPeripheryObjectInterface::OnEnterRadiusPeriphery_Implementation(ACharacter* SourceCharacter, EPeripheryType PeripheryType) {}
+void IPeripheryObjectInterface::OnExitRadiusPeriphery_Implementation(ACharacter* SourceCharacter, EPeripheryType PeripheryType) {}
+void IPeripheryObjectInterface::OnEnterConePeriphery_Implementation(ACharacter* SourceCharacter, EPeripheryType PeripheryType) {}
+void IPeripheryObjectInterface::OnExitConePeriphery_Implementation(ACharacter* SourceCharacter, EPeripheryType PeripheryType) {}
+void IPeripheryObjectInterface::OnEnterLineTracePeriphery_Implementation(ACharacter* SourceCharacter, EPeripheryType PeripheryType) {}
+void IPeripheryObjectInterface::OnExitLineTracePeriphery_Implementation(ACharacter* SourceCharacter, EPeripheryType PeripheryType) {}

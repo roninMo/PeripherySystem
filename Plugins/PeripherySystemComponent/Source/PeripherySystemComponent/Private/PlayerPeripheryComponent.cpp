@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "PeripheryComponent.h"
+#include "PlayerPeripheryComponent.h"
 
 #include "PeripheryObjectInterface.h"
 #include "Components/SphereComponent.h"
@@ -12,7 +12,7 @@
 DEFINE_LOG_CATEGORY(PeripheryLog)
 
 
-UPeripheryComponent::UPeripheryComponent(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
+UPlayerPeripheryComponent::UPlayerPeripheryComponent(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	// Component logic
 	PrimaryComponentTick.TickGroup = TG_DuringPhysics;
@@ -22,14 +22,13 @@ UPeripheryComponent::UPeripheryComponent(const FObjectInitializer& ObjectInitial
 	
 	// Periphery components
 	PeripheryRadius = CreateDefaultSubobject<USphereComponent>(TEXT("Periphery Radius"));
-	PeripheryRadius->SetupAttachment(GetOwner()->GetRootComponent());
-	PeripheryRadius->InitSphereRadius(1250.0f);
+	// PeripheryRadius->SetupAttachment(GetOwner()->GetRootComponent());
+	PeripheryRadius->InitSphereRadius(1245.0f);
+	PeripheryRadius->SetHiddenInGame(true);
+	PeripheryRadius->SetCastHiddenShadow(false);
 	
 	PeripheryCone = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Periphery Cone"));
-	PeripheryCone->SetupAttachment(GetOwner()->GetRootComponent());
-	PeripheryCone->SetRelativeLocation(FVector(640.0f, 0.0f, 0.0f));
-	PeripheryCone->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
-	PeripheryCone->SetRelativeScale3D(FVector(1.0f, 1.0f, 6.4f));
+	// PeripheryCone->SetupAttachment(GetOwner()->GetRootComponent());
 	PeripheryCone->SetHiddenInGame(true);
 	PeripheryCone->SetCastHiddenShadow(false);
 	
@@ -40,9 +39,9 @@ UPeripheryComponent::UPeripheryComponent(const FObjectInitializer& ObjectInitial
 	
 	// Item Detection
 	ItemDetection = CreateDefaultSubobject<USphereComponent>(TEXT("Item Detection"));
-	ItemDetection->SetupAttachment(GetOwner()->GetRootComponent());
-	ItemDetection->InitSphereRadius(100.f);
-	ItemDetection->SetRelativeLocation(FVector(0.f, 0.f, -90.f));
+	// ItemDetection->SetupAttachment(GetOwner()->GetRootComponent());
+	ItemDetection->SetHiddenInGame(true);
+	ItemDetection->SetCastHiddenShadow(false);
 
 	ItemDetection->SetGenerateOverlapEvents(true);
 	ItemDetection->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -54,34 +53,34 @@ UPeripheryComponent::UPeripheryComponent(const FObjectInitializer& ObjectInitial
 }
 
 
-void UPeripheryComponent::InitPeripheryInformation()
+void UPlayerPeripheryComponent::InitPeripheryInformation()
 {
 	// Initialize the periphery
 	if (PeripheryRadius)
 	{
-		PeripheryRadius->OnComponentBeginOverlap.AddDynamic(this, &UPeripheryComponent::EnterPeripheryRadius);
-		PeripheryRadius->OnComponentEndOverlap.AddDynamic(this, &UPeripheryComponent::ExitPeripheryRadius);
+		PeripheryRadius->OnComponentBeginOverlap.AddDynamic(this, &UPlayerPeripheryComponent::EnterPeripheryRadius);
+		PeripheryRadius->OnComponentEndOverlap.AddDynamic(this, &UPlayerPeripheryComponent::ExitPeripheryRadius);
 		ConfigurePeripheryCollision(PeripheryRadius);
 	}
 
 	// The cone, the cone of shame!
 	if (PeripheryCone)
 	{
-		PeripheryCone->OnComponentBeginOverlap.AddDynamic(this, &UPeripheryComponent::EnterPeripheryCone);
-		PeripheryCone->OnComponentEndOverlap.AddDynamic(this, &UPeripheryComponent::ExitPeripheryCone);
+		PeripheryCone->OnComponentBeginOverlap.AddDynamic(this, &UPlayerPeripheryComponent::EnterPeripheryCone);
+		PeripheryCone->OnComponentEndOverlap.AddDynamic(this, &UPlayerPeripheryComponent::ExitPeripheryCone);
 		ConfigurePeripheryCollision(PeripheryCone);
 	}
 
-	ItemDetection->OnComponentBeginOverlap.AddDynamic(this, &UPeripheryComponent::OnEnterItemRadius);
-	ItemDetection->OnComponentEndOverlap.AddDynamic(this, &UPeripheryComponent::OnExitItemRadius);
+	ItemDetection->OnComponentBeginOverlap.AddDynamic(this, &UPlayerPeripheryComponent::OnEnterItemRadius);
+	ItemDetection->OnComponentEndOverlap.AddDynamic(this, &UPlayerPeripheryComponent::OnExitItemRadius);
 }
 
 
-void UPeripheryComponent::BeginPlay()
+void UPlayerPeripheryComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (GetOwner())
+	if (GetOwner() && IgnoreOwnerActors)
 	{
 		IgnoredActors.AddUnique(GetOwner());
 		GetOwner()->GetAllChildActors(IgnoredActors);
@@ -89,7 +88,7 @@ void UPeripheryComponent::BeginPlay()
 }
 
 
-void UPeripheryComponent::ConfigurePeripheryCollision(UPrimitiveComponent* Component)
+void UPlayerPeripheryComponent::ConfigurePeripheryCollision(UPrimitiveComponent* Component)
 {
 	if (!Component) return;
 	Component->SetGenerateOverlapEvents(true);
@@ -101,7 +100,7 @@ void UPeripheryComponent::ConfigurePeripheryCollision(UPrimitiveComponent* Compo
 }
 
 
-void UPeripheryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+void UPlayerPeripheryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 	
@@ -111,7 +110,7 @@ void UPeripheryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 
 
 #pragma region Periphery functions
-void UPeripheryComponent::HandlePeripheryLineTrace()
+void UPlayerPeripheryComponent::HandlePeripheryLineTrace()
 {
 	PreviousTracedActor = TracedActor; // Cached for on exit traces
 	
@@ -190,7 +189,7 @@ void UPeripheryComponent::HandlePeripheryLineTrace()
 }
 
 
-void UPeripheryComponent::EnterPeripheryRadius(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+void UPlayerPeripheryComponent::EnterPeripheryRadius(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	if (!GetCharacter()) return;
 	if (OtherActor == Player) return;
@@ -198,8 +197,8 @@ void UPeripheryComponent::EnterPeripheryRadius(UPrimitiveComponent* OverlappedCo
 	IPeripheryObjectInterface* PeripheryObject = Cast<IPeripheryObjectInterface>(OtherActor);
 	if (PeripheryObject)
 	{
-		PeripheryObject->OnEnterRadiusPeriphery(Player, FindPeripheryType(OtherActor));
-		ObjectInPlayerRadius.Broadcast(OtherActor);
+		PeripheryObject->OnEnterRadiusPeriphery(Player, FindPeripheryType(OtherActor)); // Object logic
+		ObjectInPlayerRadius.Broadcast(OtherActor); // Player logic
 	}
 	
 	if (bDebugPeripheryRadius)
@@ -209,7 +208,7 @@ void UPeripheryComponent::EnterPeripheryRadius(UPrimitiveComponent* OverlappedCo
 }
 
 
-void UPeripheryComponent::ExitPeripheryRadius(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+void UPlayerPeripheryComponent::ExitPeripheryRadius(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
 	if (!GetCharacter()) return;
 	if (OtherActor == Player) return;
@@ -228,7 +227,7 @@ void UPeripheryComponent::ExitPeripheryRadius(UPrimitiveComponent* OverlappedCom
 }
 
 
-void UPeripheryComponent::EnterPeripheryCone(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+void UPlayerPeripheryComponent::EnterPeripheryCone(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	if (!GetCharacter()) return;
 	if (OtherActor == Player) return;
@@ -247,7 +246,7 @@ void UPeripheryComponent::EnterPeripheryCone(UPrimitiveComponent* OverlappedComp
 }
 
 
-void UPeripheryComponent::ExitPeripheryCone(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+void UPlayerPeripheryComponent::ExitPeripheryCone(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
 	if (!GetCharacter()) return;
 	if (OtherActor == Player) return;
@@ -266,13 +265,13 @@ void UPeripheryComponent::ExitPeripheryCone(UPrimitiveComponent* OverlappedCompo
 }
 
 
-void UPeripheryComponent::OnEnterItemRadius(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+void UPlayerPeripheryComponent::OnEnterItemRadius(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	// Add logic here
 }
 
 
-void UPeripheryComponent::OnExitItemRadius(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+void UPlayerPeripheryComponent::OnExitItemRadius(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
 	// Add logic here
 }
@@ -281,14 +280,14 @@ void UPeripheryComponent::OnExitItemRadius(UPrimitiveComponent* OverlappedCompon
 
 
 
-EPeripheryType UPeripheryComponent::FindPeripheryType(AActor* OtherActor) const
+EPeripheryType UPlayerPeripheryComponent::FindPeripheryType(AActor* OtherActor) const
 {
 	// Override this logic to determine the periphery type of an object within the player's periphery
 	return EPeripheryType::EP_None;
 }
 
 
-bool UPeripheryComponent::GetCharacter()
+bool UPlayerPeripheryComponent::GetCharacter()
 {
 	if (Player) return true;
 
@@ -304,8 +303,22 @@ bool UPeripheryComponent::GetCharacter()
 }
 
 
-AActor* UPeripheryComponent::GetTracedObject() const
+AActor* UPlayerPeripheryComponent::GetTracedObject() const
 {
 	return TracedActor;
 }
 
+USphereComponent* UPlayerPeripheryComponent::GetPeripheryRadius()
+{
+	return PeripheryRadius;
+}
+
+UStaticMeshComponent* UPlayerPeripheryComponent::GetPeripheryCone()
+{
+	return PeripheryCone;
+}
+
+USphereComponent* UPlayerPeripheryComponent::GetItemDetection()
+{
+	return ItemDetection;
+}

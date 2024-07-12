@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "PeripheryTypes.h"
 #include "Components/ActorComponent.h"
-#include "PeripheryComponent.generated.h"
+#include "PlayerPeripheryComponent.generated.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(PeripheryLog, Log, All);
 
@@ -20,8 +20,14 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FObjectInPeripheryTrace, AActor*, Pe
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FObjectOutsideOfPeripheryTrace, AActor*, PeripheryObject);
 
 
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class PERIPHERYSYSTEMCOMPONENT_API UPeripheryComponent : public UActorComponent
+/**
+ * Class for handling interaction with certain objects within the player's periphery.
+ * @note there's logic for handling what happens when a player finds an object, and you're able to customize the behavior for different objects
+ * @ref You still need to handle the majority of the logic for building up the components, it only takes a moment to setup the configuration
+ *		- Configure the components to link to the character, InitPeripheryInformation, Blueprint delegates, and periphery functions customization
+ */
+UCLASS( ClassGroup=(Periphery), meta=(BlueprintSpawnableComponent) )
+class PERIPHERYSYSTEMCOMPONENT_API UPlayerPeripheryComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
@@ -36,13 +42,14 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Detection")
 	TObjectPtr<USphereComponent> ItemDetection;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery") FVector PeripheryConeToFirstPersonLocation = FVector(340.0f, 0.0f, 74.0f);
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery") FVector PeripheryConeToFirstPersonLocation = FVector(340.0f, 0.0f, 64.0f);
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery") float PeripheryTraceDistance = 6400;
 	UPROPERTY(BlueprintReadWrite) TArray<AActor*> IgnoredActors;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery") TEnumAsByte<ETraceTypeQuery> PeripheryLineTraceType = TraceTypeQuery1;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery") TEnumAsByte<ECollisionChannel> PeripheryRadiusChannel = ECC_Pawn;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Detection") TEnumAsByte<ECollisionChannel> ItemDetectionChannel = ECC_GameTraceChannel1;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery") bool IgnoreOwnerActors = true;
 
 	
 	/** A reference to the currently traced object of the character */
@@ -68,25 +75,31 @@ protected:
 	
 	
 public:	
-	UPeripheryComponent(const FObjectInitializer& ObjectInitializer);
+	UPlayerPeripheryComponent(const FObjectInitializer& ObjectInitializer);
 
 	/**
 	 * InitCharacterInformation -> Initializes the periphery for the player
 	 * @note this needs to be called once the character has been initialized
 	 */
-	virtual void InitPeripheryInformation();
+	UFUNCTION(BlueprintCallable) virtual void InitPeripheryInformation();
 	
 	/**
 	  * This logic is executed for characters with a periphery component if the object overlaps with detection components
 	  *	This is useful for a number of things. Showing and updating ui states, keeping track of enemies using radar, etc.
 	  *	Information that is not persistent and the player should not keep track of, but needs to be updated if the player interacts or comes within "range" of a object, this is where this might come in handy  
 	 */
+	/** Radius delegates */
 	UPROPERTY(BlueprintAssignable) FObjectInRadius ObjectInPlayerRadius;
 	UPROPERTY(BlueprintAssignable) FObjectOutsideOfRadius ObjectOutsideOfPlayerRadius;
+	
+	/** Periphery Cone delegates */
 	UPROPERTY(BlueprintAssignable) FObjectInPeripheryCone ObjectInPeripheryCone;
 	UPROPERTY(BlueprintAssignable) FObjectOutsideOfPeripheryCone ObjectOutsideOfPeripheryCone;
+	
+	/** Periphery Trace delegates */
 	UPROPERTY(BlueprintAssignable) FObjectInPeripheryTrace ObjectInPeripheryTrace;
 	UPROPERTY(BlueprintAssignable) FObjectOutsideOfPeripheryTrace ObjectOutsideOfPeripheryTrace;
+
 	
 protected:
 	virtual void BeginPlay() override;
@@ -140,8 +153,10 @@ protected:
 
 
 public:
-	/** Blueprint access to the active trace object for things like player and inventory interaction */
 	UFUNCTION(BlueprintCallable) virtual AActor* GetTracedObject() const;
+	UFUNCTION(BlueprintCallable) virtual USphereComponent* GetPeripheryRadius();
+	UFUNCTION(BlueprintCallable) virtual UStaticMeshComponent* GetPeripheryCone();
+	UFUNCTION(BlueprintCallable) virtual USphereComponent* GetItemDetection();
 
 	
 };
