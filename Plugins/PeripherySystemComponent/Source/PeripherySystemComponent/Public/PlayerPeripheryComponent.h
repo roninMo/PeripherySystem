@@ -12,12 +12,12 @@ DECLARE_LOG_CATEGORY_EXTERN(PeripheryLog, Log, All);
 class USphereComponent;
 class IPeripheryObjectInterface;
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FObjectInRadius, AActor*, PeripheryObject);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FObjectOutsideOfRadius, AActor*, PeripheryObject);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FObjectInPeripheryCone, AActor*, PeripheryObject);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FObjectOutsideOfPeripheryCone, AActor*, PeripheryObject);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FObjectInPeripheryTrace, AActor*, PeripheryObject);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FObjectOutsideOfPeripheryTrace, AActor*, PeripheryObject);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FObjectInRadiusDelegate, TScriptInterface<IPeripheryObjectInterface>, PeripheryObject);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FObjectOutsideOfRadiusDelegate, TScriptInterface<IPeripheryObjectInterface>, PeripheryObject);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FObjectInPeripheryConeDelegate, TScriptInterface<IPeripheryObjectInterface>, PeripheryObject);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FObjectOutsideOfPeripheryConeDelegate, TScriptInterface<IPeripheryObjectInterface>, PeripheryObject);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FObjectInPeripheryTraceDelegate, TScriptInterface<IPeripheryObjectInterface>, PeripheryObject);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FObjectOutsideOfPeripheryTraceDelegate, TScriptInterface<IPeripheryObjectInterface>, PeripheryObject);
 
 
 /**
@@ -32,85 +32,92 @@ class PERIPHERYSYSTEMCOMPONENT_API UPlayerPeripheryComponent : public UActorComp
 	GENERATED_BODY()
 
 protected:
-	// Periphery components
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery")
-	TObjectPtr<USphereComponent> PeripheryRadius;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery") bool bEnablePeripheryRadius;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery") bool bEnablePeripheryTrace;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery") bool bEnableItemDetection;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery") bool bEnablePeripheryCone;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery")
-	TObjectPtr<UStaticMeshComponent> PeripheryCone;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Radius", meta = (EditCondition = "bEnablePeripheryRadius", EditConditionHides))
+	TObjectPtr<USphereComponent>		PeripheryRadius;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Detection")
-	TObjectPtr<USphereComponent> ItemDetection;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Item Detection", meta = (EditCondition = "bEnableItemDetection", EditConditionHides))
+	TObjectPtr<USphereComponent>		ItemDetection;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery") FVector PeripheryConeToFirstPersonLocation = FVector(340.0f, 0.0f, 64.0f);
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery") float PeripheryTraceDistance = 6400;
-	UPROPERTY(BlueprintReadWrite) TArray<AActor*> IgnoredActors;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Cone", meta = (EditCondition = "bEnablePeripheryCone", EditConditionHides))
+	TObjectPtr<UStaticMeshComponent>	PeripheryCone;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery") TEnumAsByte<ETraceTypeQuery> PeripheryLineTraceType = TraceTypeQuery1;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery") TEnumAsByte<ECollisionChannel> PeripheryRadiusChannel = ECC_Pawn;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Detection") TEnumAsByte<ECollisionChannel> ItemDetectionChannel = ECC_GameTraceChannel1;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery") bool IgnoreOwnerActors = true;
 
+	/** Periphery Radius */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Radius", meta = (EditCondition = "bEnablePeripheryRadius", EditConditionHides))
+	TEnumAsByte<ECollisionChannel> PeripheryRadiusChannel = ECC_Pawn;
+
+	/** Item Detection */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Item Detection", meta = (EditCondition = "bEnableItemDetection", EditConditionHides))
+	TEnumAsByte<ECollisionChannel> ItemDetectionChannel = ECC_GameTraceChannel1;
+
+	/** Periphery Cone */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Cone", meta = (EditCondition = "bEnablePeripheryCone", EditConditionHides))
+	TEnumAsByte<ECollisionChannel> PeripheryConeChannel = ECC_Pawn;
 	
-	/** A reference to the currently traced object of the character */
-	UPROPERTY(BlueprintReadWrite) TObjectPtr<AActor> TracedActor;
-	UPROPERTY(BlueprintReadWrite) TObjectPtr<AActor> PreviousTracedActor;
-	IPeripheryObjectInterface* ActiveTraceObject; // Internal object reference for the periphery interface
-	UPROPERTY(BlueprintReadWrite) ACharacter* Player;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Cone", meta = (EditCondition = "bEnablePeripheryCone", EditConditionHides))
+	FVector PeripheryConeToFirstPersonLocation = FVector(340.0f, 0.0f, 64.0f);
 
-	// UPROPERTY(BlueprintReadWrite) TScriptInterface<IPeripheryObjectInterface> PeripheryTraceInformation; // TODO: Eventually use script interfaces, we already have a good thing in place for handling logic for different objects, so this isn't necessary
-
-	/** A list of the interactive objects the player can interact with */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite) TArray<AActor*> InteractiveObjectsInRadius;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite) TObjectPtr<AActor> ActiveInteractiveObject;
-
+	/** Periphery Trace */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Trace", meta = (EditCondition = "bEnablePeripheryTrace", EditConditionHides)) TEnumAsByte<ETraceTypeQuery> PeripheryLineTraceType = TraceTypeQuery1;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Trace", meta = (EditCondition = "bEnablePeripheryTrace", EditConditionHides)) float PeripheryTraceDistance = 6400;
+	UPROPERTY(BlueprintReadWrite) TScriptInterface<IPeripheryObjectInterface> TracedActor;
+	UPROPERTY(BlueprintReadWrite) TScriptInterface<IPeripheryObjectInterface> PreviousTracedActor;
+	
 	/** Other */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug") bool bDebugPeripheryRadius;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug") bool bDebugItemDetection;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug") bool bDebugPeripheryCone;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug|LineTrace") bool bDebugPeripheryLineTrace;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug|LineTrace") FColor TraceColor = FColor::Silver;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug|LineTrace") FColor TraceHitColor = FColor::Emerald;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug|LineTrace") float TraceDuration = 0.1;
+	UPROPERTY(BlueprintReadWrite) TArray<AActor*> IgnoredActors;
+	UPROPERTY(BlueprintReadWrite) ACharacter* Player;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Utility", meta = (EditCondition = "bEnablePeripheryRadius || bEnablePeripheryTrace || bEnableItemDetection || bEnablePeripheryCone", EditConditionHides))
+	bool IgnoreOwnerActors = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Radius|Debug", meta = (EditCondition = "bEnablePeripheryRadius", EditConditionHides)) bool bDebugPeripheryRadius;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Item Detection|Debug", meta = (EditCondition = "bEnableItemDetection", EditConditionHides)) bool bDebugItemDetection;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Cone|Debug", meta = (EditCondition = "bEnablePeripheryCone", EditConditionHides)) bool bDebugPeripheryCone;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Trace|Debug", meta = (EditCondition = "bEnablePeripheryTrace", EditConditionHides)) bool bDebugPeripheryLineTrace;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Trace|Debug", meta = (EditCondition = "bEnablePeripheryTrace", EditConditionHides)) FColor TraceColor = FColor::Silver;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Trace|Debug", meta = (EditCondition = "bEnablePeripheryTrace", EditConditionHides)) FColor TraceHitColor = FColor::Emerald;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Trace|Debug", meta = (EditCondition = "bEnablePeripheryTrace", EditConditionHides)) float TraceDuration = 0.1;
+	
+	
+	// UPROPERTY(BlueprintReadWrite) TScriptInterface<IPeripheryObjectInterface> PeripheryTraceInformation; // TODO: Eventually use script interfaces, we already have a good thing in place for handling logic for different objects, so this isn't necessary
 	
 	
 public:	
 	UPlayerPeripheryComponent(const FObjectInitializer& ObjectInitializer);
 
 	/**
-	 * InitCharacterInformation -> Initializes the periphery for the player
-	 * @note this needs to be called once the character has been initialized
-	 */
-	UFUNCTION(BlueprintCallable) virtual void InitPeripheryInformation();
-	
-	/**
 	  * This logic is executed for characters with a periphery component if the object overlaps with detection components
 	  *	This is useful for a number of things. Showing and updating ui states, keeping track of enemies using radar, etc.
 	  *	Information that is not persistent and the player should not keep track of, but needs to be updated if the player interacts or comes within "range" of a object, this is where this might come in handy  
 	 */
 	/** Radius delegates */
-	UPROPERTY(BlueprintAssignable) FObjectInRadius ObjectInPlayerRadius;
-	UPROPERTY(BlueprintAssignable) FObjectOutsideOfRadius ObjectOutsideOfPlayerRadius;
+	UPROPERTY(BlueprintAssignable) FObjectInRadiusDelegate ObjectInPlayerRadius;
+	UPROPERTY(BlueprintAssignable) FObjectOutsideOfRadiusDelegate ObjectOutsideOfPlayerRadius;
 	
 	/** Periphery Cone delegates */
-	UPROPERTY(BlueprintAssignable) FObjectInPeripheryCone ObjectInPeripheryCone;
-	UPROPERTY(BlueprintAssignable) FObjectOutsideOfPeripheryCone ObjectOutsideOfPeripheryCone;
+	UPROPERTY(BlueprintAssignable) FObjectInPeripheryConeDelegate ObjectInPeripheryCone;
+	UPROPERTY(BlueprintAssignable) FObjectOutsideOfPeripheryConeDelegate ObjectOutsideOfPeripheryCone;
 	
 	/** Periphery Trace delegates */
-	UPROPERTY(BlueprintAssignable) FObjectInPeripheryTrace ObjectInPeripheryTrace;
-	UPROPERTY(BlueprintAssignable) FObjectOutsideOfPeripheryTrace ObjectOutsideOfPeripheryTrace;
+	UPROPERTY(BlueprintAssignable) FObjectInPeripheryTraceDelegate ObjectInPeripheryTrace;
+	UPROPERTY(BlueprintAssignable) FObjectOutsideOfPeripheryTraceDelegate ObjectOutsideOfPeripheryTrace;
 
 	
 protected:
 	virtual void BeginPlay() override;
 	
 	/** Add collision events for the locally controlled player */
-	virtual void ConfigurePeripheryCollision(UPrimitiveComponent* Component);
+	UFUNCTION(BlueprintCallable)
+	virtual void ConfigurePeripheryCollision(UPrimitiveComponent* Component, bool bEnableCollision);
 
 	/** This is used for performing accurate traces for anything the player is aiming at */
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-
-
+	
 	
 //----------------------------------------------------------------------------------------------------------------------//
 // Periphery functions																									//
@@ -147,13 +154,19 @@ protected:
 // Utility																						//
 //----------------------------------------------------------------------------------------------//
 protected:
+	/**
+	 * Configures the periphery component's logic for the player
+	 * @remarks this needs to be called once the character has been initialized
+	 */
+	UFUNCTION(BlueprintCallable) virtual void InitPeripheryInformation();
+	
 	/** Helper function for determining the type of overlay that should be used */
-	UFUNCTION() virtual EPeripheryType FindPeripheryType(AActor* OtherActor) const;
+	UFUNCTION() virtual EPeripheryType FindPeripheryType(TScriptInterface<IPeripheryObjectInterface> PeripheryObject) const;
 	virtual bool GetCharacter(); 
 
 
 public:
-	UFUNCTION(BlueprintCallable) virtual AActor* GetTracedObject() const;
+	UFUNCTION(BlueprintCallable) virtual TScriptInterface<IPeripheryObjectInterface> GetTracedObject() const;
 	UFUNCTION(BlueprintCallable) virtual USphereComponent* GetPeripheryRadius();
 	UFUNCTION(BlueprintCallable) virtual UStaticMeshComponent* GetPeripheryCone();
 	UFUNCTION(BlueprintCallable) virtual USphereComponent* GetItemDetection();

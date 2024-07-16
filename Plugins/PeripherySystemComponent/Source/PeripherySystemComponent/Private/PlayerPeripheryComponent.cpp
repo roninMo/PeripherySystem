@@ -26,30 +26,39 @@ UPlayerPeripheryComponent::UPlayerPeripheryComponent(const FObjectInitializer& O
 	PeripheryRadius->InitSphereRadius(1245.0f);
 	PeripheryRadius->SetHiddenInGame(true);
 	PeripheryRadius->SetCastHiddenShadow(false);
-	
+
+	PeripheryRadius->SetGenerateOverlapEvents(true);
+	PeripheryRadius->SetCollisionObjectType(PeripheryRadiusChannel);
+	PeripheryRadius->SetCollisionResponseToAllChannels(ECR_Ignore);
+	PeripheryRadius->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	PeripheryRadius->SetCollisionResponseToChannel(ECC_WorldDynamic, ECollisionResponse::ECR_Overlap);
+	PeripheryRadius->SetCollisionResponseToChannel(ECC_Pawn, ECollisionResponse::ECR_Overlap);
+	PeripheryRadius->SetCollisionResponseToChannel(PeripheryRadiusChannel, ECollisionResponse::ECR_Overlap);
+
 	PeripheryCone = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Periphery Cone"));
 	// PeripheryCone->SetupAttachment(GetOwner()->GetRootComponent());
 	PeripheryCone->SetHiddenInGame(true);
 	PeripheryCone->SetCastHiddenShadow(false);
 	
-	PeripheryRadius->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	PeripheryRadius->SetCollisionObjectType(PeripheryRadiusChannel);
-	PeripheryCone->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	PeripheryCone->SetCollisionObjectType(PeripheryRadiusChannel);
-	
-	// Item Detection
+	PeripheryCone->SetGenerateOverlapEvents(true);
+	PeripheryCone->SetCollisionObjectType(PeripheryConeChannel);
+	PeripheryCone->SetCollisionResponseToAllChannels(ECR_Ignore);
+	PeripheryCone->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	PeripheryCone->SetCollisionResponseToChannel(ECC_WorldDynamic, ECollisionResponse::ECR_Overlap);
+	PeripheryCone->SetCollisionResponseToChannel(ECC_Pawn, ECollisionResponse::ECR_Overlap);
+	PeripheryCone->SetCollisionResponseToChannel(PeripheryConeChannel, ECollisionResponse::ECR_Overlap);
+
 	ItemDetection = CreateDefaultSubobject<USphereComponent>(TEXT("Item Detection"));
 	// ItemDetection->SetupAttachment(GetOwner()->GetRootComponent());
 	ItemDetection->SetHiddenInGame(true);
 	ItemDetection->SetCastHiddenShadow(false);
 
 	ItemDetection->SetGenerateOverlapEvents(true);
-	ItemDetection->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	ItemDetection->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	ItemDetection->SetCollisionObjectType(ItemDetectionChannel);
-	ItemDetection->SetCollisionResponseToChannel(ItemDetectionChannel, ECollisionResponse::ECR_Overlap);
-	ItemDetection->SetCollisionResponseToChannel(ECC_WorldDynamic, ECollisionResponse::ECR_Overlap);
+	ItemDetection->SetCollisionResponseToChannels(ECR_Ignore);
 	ItemDetection->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	ItemDetection->SetCollisionResponseToChannel(ECC_WorldDynamic, ECollisionResponse::ECR_Overlap);
+	ItemDetection->SetCollisionResponseToChannel(ItemDetectionChannel, ECollisionResponse::ECR_Overlap);
 }
 
 
@@ -60,7 +69,14 @@ void UPlayerPeripheryComponent::InitPeripheryInformation()
 	{
 		PeripheryRadius->OnComponentBeginOverlap.AddDynamic(this, &UPlayerPeripheryComponent::EnterPeripheryRadius);
 		PeripheryRadius->OnComponentEndOverlap.AddDynamic(this, &UPlayerPeripheryComponent::ExitPeripheryRadius);
-		ConfigurePeripheryCollision(PeripheryRadius);
+		ConfigurePeripheryCollision(PeripheryRadius, bEnablePeripheryRadius);
+	}
+
+	if (ItemDetection)
+	{
+		ItemDetection->OnComponentBeginOverlap.AddDynamic(this, &UPlayerPeripheryComponent::OnEnterItemRadius);
+		ItemDetection->OnComponentEndOverlap.AddDynamic(this, &UPlayerPeripheryComponent::OnExitItemRadius);
+		ConfigurePeripheryCollision(ItemDetection, bEnableItemDetection);
 	}
 
 	// The cone, the cone of shame!
@@ -68,11 +84,8 @@ void UPlayerPeripheryComponent::InitPeripheryInformation()
 	{
 		PeripheryCone->OnComponentBeginOverlap.AddDynamic(this, &UPlayerPeripheryComponent::EnterPeripheryCone);
 		PeripheryCone->OnComponentEndOverlap.AddDynamic(this, &UPlayerPeripheryComponent::ExitPeripheryCone);
-		ConfigurePeripheryCollision(PeripheryCone);
+		ConfigurePeripheryCollision(PeripheryCone, bEnablePeripheryCone);
 	}
-
-	ItemDetection->OnComponentBeginOverlap.AddDynamic(this, &UPlayerPeripheryComponent::OnEnterItemRadius);
-	ItemDetection->OnComponentEndOverlap.AddDynamic(this, &UPlayerPeripheryComponent::OnExitItemRadius);
 }
 
 
@@ -85,25 +98,31 @@ void UPlayerPeripheryComponent::BeginPlay()
 		IgnoredActors.AddUnique(GetOwner());
 		GetOwner()->GetAllChildActors(IgnoredActors);
 	}
+
+	InitPeripheryInformation();
 }
 
 
-void UPlayerPeripheryComponent::ConfigurePeripheryCollision(UPrimitiveComponent* Component)
+void UPlayerPeripheryComponent::ConfigurePeripheryCollision(UPrimitiveComponent* Component, const bool bEnableCollision)
 {
 	if (!Component) return;
-	Component->SetGenerateOverlapEvents(true);
-	Component->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	Component->SetCollisionResponseToAllChannels(ECR_Ignore);
-	
-	Component->SetCollisionResponseToChannel(ECC_WorldDynamic, ECollisionResponse::ECR_Overlap);
-	Component->SetCollisionResponseToChannel(ECC_Pawn, ECollisionResponse::ECR_Overlap);
+	if (bEnableCollision)
+	{
+		Component->SetGenerateOverlapEvents(true);
+		Component->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	}
+	else
+	{
+		Component->SetGenerateOverlapEvents(false);
+		Component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
 }
 
 
 void UPlayerPeripheryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-	
+	if (bEnablePeripheryTrace) HandlePeripheryLineTrace();
 }
 
 
@@ -144,23 +163,21 @@ void UPlayerPeripheryComponent::HandlePeripheryLineTrace()
 
 	// Periphery logic
 	TracedActor = HitResult.GetActor();
-	IPeripheryObjectInterface* PeripheryObject = Cast<IPeripheryObjectInterface>(TracedActor);
 	
 	// Only activate the enter overlap logic once (this also handles if they aren't already aiming at something, and still aren't)
-	if (ActiveTraceObject == PeripheryObject) return;
+	if (TracedActor.GetInterface() == PreviousTracedActor.GetInterface()) return;
 	
 	// if the player isn't already aiming at anything
-	if (!ActiveTraceObject)
+	if (!PreviousTracedActor.GetInterface())
 	{
-		if (PeripheryObject)
+		if (TracedActor.GetInterface())
 		{
-			ActiveTraceObject = PeripheryObject;
-			ActiveTraceObject->OnEnterLineTracePeriphery(Player, FindPeripheryType(TracedActor));
+			TracedActor->OnEnterLineTracePeriphery(Player, FindPeripheryType(TracedActor));
 			ObjectInPeripheryTrace.Broadcast(TracedActor);
 
 			if (bDebugPeripheryLineTrace)
 			{
-				UE_LOGFMT(PeripheryLog, Log, "{0}: {1} Started looking at {2}", *UEnum::GetValueAsString(GetOwner()->GetLocalRole()), *GetName(), *GetNameSafe(TracedActor));
+				UE_LOGFMT(PeripheryLog, Log, "{0}: {1} Started looking at {2}", *UEnum::GetValueAsString(GetOwner()->GetLocalRole()), *GetName(), *GetNameSafe(TracedActor.GetObject()));
 			}
 		}
 		
@@ -168,20 +185,30 @@ void UPlayerPeripheryComponent::HandlePeripheryLineTrace()
 	}
 
 	// Transition to aiming at another object, or transition out of aiming at an object
-	if (ActiveTraceObject)
+	if (TracedActor.GetInterface())
 	{
-		ActiveTraceObject->OnExitLineTracePeriphery(Player, FindPeripheryType(PreviousTracedActor));
-		ObjectOutsideOfPeripheryTrace.Broadcast(TracedActor);
+		TracedActor->OnEnterLineTracePeriphery(Player, FindPeripheryType(TracedActor));
+		ObjectInPeripheryTrace.Broadcast(TracedActor);
+		PreviousTracedActor->OnExitLineTracePeriphery(Player, FindPeripheryType(PreviousTracedActor));
+		ObjectOutsideOfPeripheryTrace.Broadcast(PreviousTracedActor);
 		
-		if (PeripheryObject)
+		if (bDebugPeripheryLineTrace)
 		{
-			ActiveTraceObject = PeripheryObject;
-			ActiveTraceObject->OnEnterLineTracePeriphery(Player, FindPeripheryType(TracedActor));
+			UE_LOGFMT(PeripheryLog, Log, "{0}: {1} Transitioned looking at {2} to {3}",
+				*UEnum::GetValueAsString(GetOwner()->GetLocalRole()), *GetName(), *GetNameSafe(PreviousTracedActor.GetObject()), *GetNameSafe(TracedActor.GetObject())
+			);
 		}
-		else
+		
+		return;
+	}
+	else
+	{
+		PreviousTracedActor->OnExitLineTracePeriphery(Player, FindPeripheryType(PreviousTracedActor));
+		ObjectOutsideOfPeripheryTrace.Broadcast(PreviousTracedActor);
+		
+		if (bDebugPeripheryLineTrace)
 		{
-			ActiveTraceObject = nullptr;
-			// if (bDebugPlayerPeripheries) UE_LOGFMT(PeripheryLog, Log, "{0}: {1} Stopped looking at {2}", *UEnum::GetValueAsString(GetLocalRole()), *GetName(), *GetNameSafe(TracedActor));
+			UE_LOGFMT(PeripheryLog, Log, "{0}: {1} Stopped looking at {2}", *UEnum::GetValueAsString(GetOwner()->GetLocalRole()), *GetName(), *GetNameSafe(TracedActor.GetObject()));
 		}
 
 		return;
@@ -280,7 +307,7 @@ void UPlayerPeripheryComponent::OnExitItemRadius(UPrimitiveComponent* Overlapped
 
 
 
-EPeripheryType UPlayerPeripheryComponent::FindPeripheryType(AActor* OtherActor) const
+EPeripheryType UPlayerPeripheryComponent::FindPeripheryType(TScriptInterface<IPeripheryObjectInterface> PeripheryObject) const
 {
 	// Override this logic to determine the periphery type of an object within the player's periphery
 	return EPeripheryType::EP_None;
@@ -303,7 +330,7 @@ bool UPlayerPeripheryComponent::GetCharacter()
 }
 
 
-AActor* UPlayerPeripheryComponent::GetTracedObject() const
+TScriptInterface<IPeripheryObjectInterface> UPlayerPeripheryComponent::GetTracedObject() const
 {
 	return TracedActor;
 }
