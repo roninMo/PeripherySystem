@@ -13,14 +13,14 @@ class USphereComponent;
 class IPeripheryObjectInterface;
 
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FObjectInRadiusDelegate, TScriptInterface<IPeripheryObjectInterface>, PeripheryObject);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FObjectOutsideOfRadiusDelegate, TScriptInterface<IPeripheryObjectInterface>, PeripheryObject);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FObjectInPeripheryConeDelegate, TScriptInterface<IPeripheryObjectInterface>, PeripheryObject);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FObjectOutsideOfPeripheryConeDelegate, TScriptInterface<IPeripheryObjectInterface>, PeripheryObject);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FObjectInPeripheryTraceDelegate, TScriptInterface<IPeripheryObjectInterface>, PeripheryObject);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FObjectOutsideOfPeripheryTraceDelegate, TScriptInterface<IPeripheryObjectInterface>, PeripheryObject);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnItemOverlapBeginDelegate, AActor*, ItemDetected);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnItemOverlapEndDelegate, AActor*, ItemDetected);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_SixParams(FObjectInRadiusDelegate, AActor*, PeripheryObject, UPrimitiveComponent*, OverlappedComponent, UPrimitiveComponent*, OtherComp, int32, OtherBodyIndex, bool, bFromSweep, const FHitResult&, SweepResult);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FObjectOutsideOfRadiusDelegate, AActor*, PeripheryObject, UPrimitiveComponent*, OverlappedComponent, UPrimitiveComponent*, OtherComp, int32, OtherBodyIndex);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_SixParams(FObjectInPeripheryConeDelegate, AActor*, PeripheryObject, UPrimitiveComponent*, OverlappedComponent, UPrimitiveComponent*, OtherComp, int32, OtherBodyIndex, bool, bFromSweep, const FHitResult&, SweepResult);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FObjectOutsideOfPeripheryConeDelegate, AActor*, PeripheryObject, UPrimitiveComponent*, OverlappedComponent, UPrimitiveComponent*, OtherComp, int32, OtherBodyIndex);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FObjectInPeripheryTraceDelegate, AActor*, PeripheryObject, ACharacter*, Insigator, const FHitResult&, SweepResult);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FObjectOutsideOfPeripheryTraceDelegate, AActor*, PeripheryObject, ACharacter*, Insigator, const FHitResult&, SweepResult);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_SixParams(FOnItemOverlapBeginDelegate, AActor*, Item, UPrimitiveComponent*, OverlappedComponent, UPrimitiveComponent*, OtherComp, int32, OtherBodyIndex, bool, bFromSweep, const FHitResult&, SweepResult);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnItemOverlapEndDelegate, AActor*, Item, UPrimitiveComponent*, OverlappedComponent, UPrimitiveComponent*, OtherComp, int32, OtherBodyIndex);
 
 
 /**
@@ -35,24 +35,24 @@ class PERIPHERYSYSTEMCOMPONENT_API UPlayerPeripheriesComponent : public UActorCo
 	GENERATED_BODY()
 
 protected:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery") bool bPeripheryRadius = true;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery") bool bPeripheryTrace = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery") bool bCone = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery") bool bTrace = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery") bool bRadius = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery") bool bItemDetection = false;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery") bool bPeripheryCone = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery") bool bInitPeripheryDuringBeginPlay = true;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Radius", meta = (EditCondition = "bPeripheryRadius", EditConditionHides))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Radius", meta = (EditCondition = "bRadius", EditConditionHides))
 	TObjectPtr<USphereComponent>		PeripheryRadius;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Item Detection", meta = (EditCondition = "bItemDetection", EditConditionHides))
 	TObjectPtr<USphereComponent>		ItemDetection;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Cone", meta = (EditCondition = "bPeripheryCone", EditConditionHides))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Cone", meta = (EditCondition = "bCone", EditConditionHides))
 	TObjectPtr<UStaticMeshComponent>	PeripheryCone;
 
 
 	/** Periphery Radius */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Radius", meta = (EditCondition = "bPeripheryRadius", EditConditionHides))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Radius", meta = (EditCondition = "bRadius", EditConditionHides))
 	TEnumAsByte<ECollisionChannel> PeripheryRadiusChannel = ECC_Pawn;
 
 	/** Item Detection */
@@ -60,30 +60,30 @@ protected:
 	TEnumAsByte<ECollisionChannel> ItemDetectionChannel = ECC_GameTraceChannel1;
 
 	/** Periphery Cone */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Cone", meta = (EditCondition = "bPeripheryCone", EditConditionHides))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Cone", meta = (EditCondition = "bCone", EditConditionHides))
 	TEnumAsByte<ECollisionChannel> PeripheryConeChannel = ECC_Pawn;
 
 	/** Periphery Trace */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Trace", meta = (EditCondition = "bPeripheryTrace", EditConditionHides)) TEnumAsByte<ETraceTypeQuery> PeripheryLineTraceType = TraceTypeQuery1;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Trace", meta = (EditCondition = "bPeripheryTrace", EditConditionHides)) float PeripheryTraceDistance = 6400;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Trace", meta = (EditCondition = "bPeripheryTrace", EditConditionHides)) FVector PeripheryTraceOffset = FVector(0.0f, 0.0f, 34.0f);
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Trace", meta = (EditCondition = "bTrace", EditConditionHides)) TEnumAsByte<ETraceTypeQuery> PeripheryLineTraceType = TraceTypeQuery1;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Trace", meta = (EditCondition = "bTrace", EditConditionHides)) float PeripheryTraceDistance = 6400;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Trace", meta = (EditCondition = "bTrace", EditConditionHides)) FVector PeripheryTraceOffset = FVector(0.0f, 0.0f, 34.0f);
 	UPROPERTY(BlueprintReadWrite) TObjectPtr<AActor> TracedActor;
 	UPROPERTY(BlueprintReadWrite) TObjectPtr<AActor> PreviousTracedActor;
 	
 	/** Other */
 	UPROPERTY(BlueprintReadWrite) TArray<AActor*> IgnoredActors;
 	UPROPERTY(BlueprintReadWrite) ACharacter* Player;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Other", meta = (EditCondition = "bPeripheryRadius || bPeripheryTrace || bItemDetection || bPeripheryCone", EditConditionHides)) bool TraceShouldIgnoreOwnerActors = true;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Other", meta = (EditCondition = "bPeripheryRadius || bPeripheryTrace || bItemDetection || bPeripheryCone", EditConditionHides)) EHandlePeripheryLogic ActivationPhase = EHandlePeripheryLogic::EP_ServerAndClient;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Other", meta = (EditCondition = "bRadius || bTrace || bItemDetection || bCone", EditConditionHides)) bool TraceShouldIgnoreOwnerActors = true;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Other", meta = (EditCondition = "bRadius || bTrace || bItemDetection || bCone", EditConditionHides)) EHandlePeripheryLogic ActivationPhase = EHandlePeripheryLogic::EP_ServerAndClient;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Radius|Debug", meta = (EditCondition = "bPeripheryRadius", EditConditionHides)) bool bDebugPeripheryRadius;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Radius|Debug", meta = (EditCondition = "bRadius", EditConditionHides)) bool bDebugPeripheryRadius;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Item Detection|Debug", meta = (EditCondition = "bItemDetection", EditConditionHides)) bool bDebugItemDetection;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Cone|Debug", meta = (EditCondition = "bPeripheryCone", EditConditionHides)) bool bDebugPeripheryCone;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Cone|Debug", meta = (EditCondition = "bCone", EditConditionHides)) bool bDebugPeripheryCone;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Trace|Debug", meta = (EditCondition = "bPeripheryTrace", EditConditionHides)) bool bDebugPeripheryLineTrace;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Trace|Debug", meta = (EditCondition = "bPeripheryTrace", EditConditionHides)) FColor TraceColor = FColor::Silver;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Trace|Debug", meta = (EditCondition = "bPeripheryTrace", EditConditionHides)) FColor TraceHitColor = FColor::Emerald;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Trace|Debug", meta = (EditCondition = "bPeripheryTrace", EditConditionHides)) float TraceDuration = 0.1;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Trace|Debug", meta = (EditCondition = "bTrace", EditConditionHides)) bool bDebugPeripheryLineTrace;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Trace|Debug", meta = (EditCondition = "bTrace", EditConditionHides)) FColor TraceColor = FColor::Silver;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Trace|Debug", meta = (EditCondition = "bTrace", EditConditionHides)) FColor TraceHitColor = FColor::Emerald;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Trace|Debug", meta = (EditCondition = "bTrace", EditConditionHides)) float TraceDuration = 0.1;
 
 	
 public:	

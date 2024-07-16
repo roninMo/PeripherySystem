@@ -72,7 +72,7 @@ void UPlayerPeripheriesComponent::InitPeripheryInformation()
 	{
 		PeripheryRadius->OnComponentBeginOverlap.AddDynamic(this, &UPlayerPeripheriesComponent::EnterPeripheryRadius);
 		PeripheryRadius->OnComponentEndOverlap.AddDynamic(this, &UPlayerPeripheriesComponent::ExitPeripheryRadius);
-		ConfigurePeripheryCollision(PeripheryRadius, bPeripheryRadius);
+		ConfigurePeripheryCollision(PeripheryRadius, bRadius);
 	}
 
 	if (ItemDetection && ActivatePeripheryLogic(ActivationPhase))
@@ -87,7 +87,7 @@ void UPlayerPeripheriesComponent::InitPeripheryInformation()
 	{
 		PeripheryCone->OnComponentBeginOverlap.AddDynamic(this, &UPlayerPeripheriesComponent::EnterPeripheryCone);
 		PeripheryCone->OnComponentEndOverlap.AddDynamic(this, &UPlayerPeripheriesComponent::ExitPeripheryCone);
-		ConfigurePeripheryCollision(PeripheryCone, bPeripheryCone);
+		ConfigurePeripheryCollision(PeripheryCone, bCone);
 	}
 }
 
@@ -125,7 +125,7 @@ void UPlayerPeripheriesComponent::ConfigurePeripheryCollision(UPrimitiveComponen
 void UPlayerPeripheriesComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-	if (bPeripheryTrace && ActivatePeripheryLogic(ActivationPhase)) HandlePeripheryLineTrace();
+	if (bTrace && ActivatePeripheryLogic(ActivationPhase)) HandlePeripheryLineTrace();
 }
 
 
@@ -134,6 +134,7 @@ void UPlayerPeripheriesComponent::TickComponent(float DeltaTime, ELevelTick Tick
 #pragma region Periphery functions
 void UPlayerPeripheriesComponent::HandlePeripheryLineTrace()
 {
+	GetCharacter();
 	PreviousTracedActor = TracedActor; // Cached for on exit traces
 	
 	FVector_NetQuantize10 AimLocation = GetOwner()->GetActorLocation();
@@ -179,7 +180,7 @@ void UPlayerPeripheriesComponent::HandlePeripheryLineTrace()
 		if (TracedActor && bIsPeripheryObject)
 		{
 			IPeripheryObjectInterface::Execute_OnEnterLineTracePeriphery(TracedActor, Player, FindPeripheryType(TracedActor));
-			ObjectInPeripheryTrace.Broadcast(TracedActor);
+			ObjectInPeripheryTrace.Broadcast(TracedActor, Player, HitResult);
 
 			if (bDebugPeripheryLineTrace)
 			{
@@ -194,13 +195,13 @@ void UPlayerPeripheriesComponent::HandlePeripheryLineTrace()
 		if (bIsPreviousTracePeripheryObject)
 		{
 			IPeripheryObjectInterface::Execute_OnExitLineTracePeriphery(PreviousTracedActor, Player, FindPeripheryType(PreviousTracedActor));
-			ObjectOutsideOfPeripheryTrace.Broadcast(PreviousTracedActor);
+			ObjectOutsideOfPeripheryTrace.Broadcast(PreviousTracedActor, Player, HitResult);
 		}
 
 		if (bIsPeripheryObject)
 		{
 			IPeripheryObjectInterface::Execute_OnEnterLineTracePeriphery(TracedActor, Player, FindPeripheryType(TracedActor));
-			ObjectInPeripheryTrace.Broadcast(TracedActor);
+			ObjectInPeripheryTrace.Broadcast(TracedActor, Player, HitResult);
 		}
 		
 		if (bDebugPeripheryLineTrace)
@@ -215,7 +216,7 @@ void UPlayerPeripheriesComponent::HandlePeripheryLineTrace()
 		if (bIsPreviousTracePeripheryObject)
 		{
 			IPeripheryObjectInterface::Execute_OnExitLineTracePeriphery(PreviousTracedActor, Player, FindPeripheryType(PreviousTracedActor));
-			ObjectOutsideOfPeripheryTrace.Broadcast(PreviousTracedActor);
+			ObjectOutsideOfPeripheryTrace.Broadcast(PreviousTracedActor, Player, HitResult);
 		}
 		
 		if (bDebugPeripheryLineTrace)
@@ -231,11 +232,12 @@ void UPlayerPeripheriesComponent::EnterPeripheryRadius(UPrimitiveComponent* Over
 	if (!GetCharacter() || !OtherActor) return;
 	if (OtherActor == Player) return;
 
+	
 	const bool bPeripheryInterface = OtherActor->GetClass()->ImplementsInterface(UPeripheryObjectInterface::StaticClass());
 	if (bPeripheryInterface)
 	{
 		IPeripheryObjectInterface::Execute_OnEnterRadiusPeriphery(OtherActor, Player, FindPeripheryType(OtherActor)); // Object logic
-		ObjectInPlayerRadius.Broadcast(OtherActor); // Player logic
+		ObjectInPlayerRadius.Broadcast(OtherActor, OverlappedComponent, OtherComp, OtherBodyIndex, bFromSweep, SweepResult); // Player logic
 	}
 	
 	if (bDebugPeripheryRadius)
@@ -255,7 +257,7 @@ void UPlayerPeripheriesComponent::ExitPeripheryRadius(UPrimitiveComponent* Overl
 	if (bPeripheryInterface)
 	{
 		IPeripheryObjectInterface::Execute_OnExitRadiusPeriphery(OtherActor, Player, FindPeripheryType(OtherActor)); // Object logic
-		ObjectOutsideOfPlayerRadius.Broadcast(OtherActor); // Player logic
+		ObjectOutsideOfPlayerRadius.Broadcast(OtherActor, OverlappedComponent, OtherComp, OtherBodyIndex); // Player logic
 	}
 	
 	if (bDebugPeripheryRadius)
@@ -275,7 +277,7 @@ void UPlayerPeripheriesComponent::EnterPeripheryCone(UPrimitiveComponent* Overla
 	if (bPeripheryInterface)
 	{
 		IPeripheryObjectInterface::Execute_OnEnterConePeriphery(OtherActor, Player, FindPeripheryType(OtherActor)); // Object logic
-		ObjectInPeripheryCone.Broadcast(OtherActor); // Player logic
+		ObjectInPeripheryCone.Broadcast(OtherActor, OverlappedComponent, OtherComp, OtherBodyIndex, bFromSweep, SweepResult); // Player logic
 	}
 	
 	if (bDebugPeripheryCone)
@@ -295,7 +297,7 @@ void UPlayerPeripheriesComponent::ExitPeripheryCone(UPrimitiveComponent* Overlap
 	if (bPeripheryInterface)
 	{
 		IPeripheryObjectInterface::Execute_OnExitConePeriphery(OtherActor, Player, FindPeripheryType(OtherActor)); // Object logic
-		ObjectOutsideOfPeripheryCone.Broadcast(OtherActor); // Player logic
+		ObjectOutsideOfPeripheryCone.Broadcast(OtherActor, OverlappedComponent, OtherComp, OtherBodyIndex); // Player logic
 	}
 	
 	if (bDebugPeripheryCone)
@@ -309,14 +311,14 @@ void UPlayerPeripheriesComponent::ExitPeripheryCone(UPrimitiveComponent* Overlap
 void UPlayerPeripheriesComponent::OnEnterItemRadius(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	if (OtherActor == Player) return;
-	OnItemOverlapBegin.Broadcast(OtherActor);
+	OnItemOverlapBegin.Broadcast(OtherActor, OverlappedComponent, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
 }
 
 
 void UPlayerPeripheriesComponent::OnExitItemRadius(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
 	if (OtherActor == Player) return;
-	OnItemOverlapEnd.Broadcast(OtherActor);
+	OnItemOverlapEnd.Broadcast(OtherActor, OverlappedComponent, OtherComp, OtherBodyIndex);
 }
 #pragma endregion
 
