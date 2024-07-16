@@ -8,7 +8,7 @@
 #include "PeripheryObjectInterface.generated.h"
 
 // This class does not need to be modified.
-UINTERFACE(Blueprintable)
+UINTERFACE(Blueprintable, BlueprintType)
 class UPeripheryObjectInterface : public UInterface
 {
 	GENERATED_BODY()
@@ -26,35 +26,35 @@ class PERIPHERYSYSTEMCOMPONENT_API IPeripheryObjectInterface
 public:
 	/** Logic when a character registers it within it's periphery */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Periphery|Radius") 
-	void OnEnterRadiusPeriphery(ACharacter* SourceCharacter, EPeripheryType PeripheryType);
-	virtual void OnEnterRadiusPeriphery_Implementation(ACharacter* SourceCharacter, EPeripheryType PeripheryType);
+	void OnEnterRadiusPeriphery(AActor* SourceCharacter, EPeripheryType PeripheryType);
+	virtual void OnEnterRadiusPeriphery_Implementation(AActor* SourceCharacter, EPeripheryType PeripheryType);
 
 	/** Logic when a character unregisters it within it's periphery */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Periphery|Radius") 
-	void OnExitRadiusPeriphery(ACharacter* SourceCharacter, EPeripheryType PeripheryType);
+	void OnExitRadiusPeriphery(AActor* SourceCharacter, EPeripheryType PeripheryType);
 
-	virtual void OnExitRadiusPeriphery_Implementation(ACharacter* SourceCharacter, EPeripheryType PeripheryType);
+	virtual void OnExitRadiusPeriphery_Implementation(AActor* SourceCharacter, EPeripheryType PeripheryType);
 	
 	/** Logic when a character's periphery cone registers the object */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Periphery|Cone") 
-	void OnEnterConePeriphery(ACharacter* SourceCharacter, EPeripheryType PeripheryType);
-	virtual void OnEnterConePeriphery_Implementation(ACharacter* SourceCharacter, EPeripheryType PeripheryType);
+	void OnEnterConePeriphery(AActor* SourceCharacter, EPeripheryType PeripheryType);
+	virtual void OnEnterConePeriphery_Implementation(AActor* SourceCharacter, EPeripheryType PeripheryType);
 
 	/** Logic when a character's periphery cone unregisters the object */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Periphery|Cone") 
-	void OnExitConePeriphery(ACharacter* SourceCharacter, EPeripheryType PeripheryType);
+	void OnExitConePeriphery(AActor* SourceCharacter, EPeripheryType PeripheryType);
 
-	virtual void OnExitConePeriphery_Implementation(ACharacter* SourceCharacter, EPeripheryType PeripheryType);
+	virtual void OnExitConePeriphery_Implementation(AActor* SourceCharacter, EPeripheryType PeripheryType);
 	
 	/** Logic when a character's trace registers the object */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Periphery|Trace") 
-	void OnEnterLineTracePeriphery(ACharacter* SourceCharacter, EPeripheryType PeripheryType);
-	virtual void OnEnterLineTracePeriphery_Implementation(ACharacter* SourceCharacter, EPeripheryType PeripheryType);
+	void OnEnterLineTracePeriphery(AActor* SourceCharacter, EPeripheryType PeripheryType);
+	virtual void OnEnterLineTracePeriphery_Implementation(AActor* SourceCharacter, EPeripheryType PeripheryType);
 
 	/** Logic when a character's trace unregisters the object */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Periphery|Trace") 
-	void OnExitLineTracePeriphery(ACharacter* SourceCharacter, EPeripheryType PeripheryType);
-	virtual void OnExitLineTracePeriphery_Implementation(ACharacter* SourceCharacter, EPeripheryType PeripheryType);
+	void OnExitLineTracePeriphery(AActor* SourceCharacter, EPeripheryType PeripheryType);
+	virtual void OnExitLineTracePeriphery_Implementation(AActor* SourceCharacter, EPeripheryType PeripheryType);
 
 	
 };
