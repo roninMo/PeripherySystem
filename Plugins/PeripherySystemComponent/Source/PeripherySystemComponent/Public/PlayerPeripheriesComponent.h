@@ -31,7 +31,7 @@ class IPeripheryObjectInterface;
  * @note There's also a periphery interface for objects having their own logic when they're within the player's periphery
  * @remark Check the plugin's example code or the docs for it's features and how to configure things \n\n
  */
-UCLASS( Blueprintable, ClassGroup=(Periphery), meta = (BlueprintSpawnableComponent))
+UCLASS(Blueprintable, ClassGroup=(Periphery), meta = (BlueprintSpawnableComponent))
 class PERIPHERYSYSTEMCOMPONENT_API UPlayerPeripheriesComponent : public UActorComponent
 {
 	GENERATED_BODY()
@@ -79,8 +79,8 @@ protected:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Peripheries|Trace", meta = (EditCondition = "bTrace", EditConditionHides)) bool bDebugPeripheryTrace;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Peripheries|Trace", meta = (EditCondition = "bTrace", EditConditionHides)) bool bDrawTraceDebug;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Peripheries|Trace", meta = (EditCondition = "bTrace && bDrawTraceDebug", EditConditionHides)) FColor TraceColor = FColor::Silver;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Peripheries|Trace", meta = (EditCondition = "bTrace && bDrawTraceDebug", EditConditionHides)) FColor TraceHitColor = FColor::Emerald;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Peripheries|Trace", meta = (EditCondition = "bTrace && bDrawTraceDebug", EditConditionHides)) FColor TraceColor = FColor::Emerald;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Peripheries|Trace", meta = (EditCondition = "bTrace && bDrawTraceDebug", EditConditionHides)) FColor TraceHitColor = FColor::Red;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Peripheries|Trace", meta = (EditCondition = "bTrace && bDrawTraceDebug", EditConditionHides)) float TraceDuration = 0.1;
 	UPROPERTY(BlueprintReadWrite) TObjectPtr<AActor> TracedActor;
 	UPROPERTY(BlueprintReadWrite) TObjectPtr<AActor> PreviousTracedActor;
@@ -191,7 +191,7 @@ protected:
 	 * Activates delegate the delegate functions ObjectInPeripheryTrace() and ObjectOutsideOfPeripheryTrace() when a valid object is within or outside of the radius \n\n
 	 * @remarks Adjust this for handling your own logic for finding valid things within the player's periphery
 	 */
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Peripheries|Radius") bool IsValidTracedObject(AActor* OtherActor, const FHitResult& HitResult);
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Peripheries|Trace") bool IsValidTracedObject(AActor* OtherActor, const FHitResult& HitResult);
 	virtual bool IsValidTracedObject_Implementation(AActor* OtherActor, const FHitResult& HitResult);
 	
 	/**

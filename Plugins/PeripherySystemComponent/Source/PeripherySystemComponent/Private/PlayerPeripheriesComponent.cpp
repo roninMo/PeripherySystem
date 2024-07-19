@@ -91,6 +91,8 @@ UPlayerPeripheriesComponent::UPlayerPeripheriesComponent(const FObjectInitialize
 	/** Periphery Trace */
 	PeripheryLineTraceObjectTypes.Add(EObjectTypeQuery::ObjectTypeQuery2);
 	PeripheryLineTraceObjectTypes.Add(EObjectTypeQuery::ObjectTypeQuery3);
+	PeripheryLineTraceObjectTypes.Add(EObjectTypeQuery::ObjectTypeQuery1);
+	PeripheryLineTraceObjectTypes.Add(EObjectTypeQuery::ObjectTypeQuery4);
 	ValidPeripheryTraceObjects = AActor::StaticClass();
 	PeripheryTraceDistance = 6400;
 	PeripheryTraceForwardOffset = 34.0;
