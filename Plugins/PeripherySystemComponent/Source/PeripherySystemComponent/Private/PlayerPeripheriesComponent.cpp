@@ -74,14 +74,14 @@ UPlayerPeripheriesComponent::UPlayerPeripheriesComponent(const FObjectInitialize
 	/** Periphery Radius */
 	PeripheryRadiusChannel = ECC_Pawn;
 	ValidPeripheryRadiusObjects = AActor::StaticClass();
-	ItemDetection->ShapeColor = FColor(116, 134, 29, 255);
-	ItemDetection->SetSphereRadius(1340);
+	PeripheryRadius->ShapeColor = FColor(116, 134, 29, 255);
+	PeripheryRadius->SetSphereRadius(1340);
 	
 	/** Item Detection */
 	ItemDetectionChannel = ECC_GameTraceChannel1;
 	ValidItemDetectionObjects = AActor::StaticClass();
 	ItemDetection->ShapeColor = FColor(150,255,108,255);
-	ItemDetection->SetSphereRadius(79);
+	ItemDetection->SetSphereRadius(100);
 	ItemDetection->SetRelativeLocation(FVector(0, 0, -79));
 
 	/** Periphery Cone */

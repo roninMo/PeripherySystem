@@ -25,10 +25,11 @@ class IPeripheryObjectInterface;
 
 
 /**
- * Class for handling interaction with certain objects within the player's periphery. \n\n
- * Just adjust the kinds of periphery you want to use, their detection, and what classes they search for, and check that they run the InitPeripheryInformation() function and you're good
+ * Class for handling interaction with certain objects within the player's periphery. This lets you do things like keep track of targets within the player's radius, highlight objects the player finds, and plenty of other things.  \n\n
+ * Just adjust the kinds of periphery you want to use, their detection, and what classes they search for, and check that you run the InitPeripheryInformation() (bInitPeripheryDuringBeginPlay) function and you're good
+ * 
  * @note There's also a periphery interface for objects having their own logic when they're within the player's periphery
- * @remarks Check the plugin's example code or the docs for it's features and how to configure things
+ * @remark Check the plugin's example code or the docs for it's features and how to configure things \n\n
  */
 UCLASS( Blueprintable, ClassGroup=(Periphery), meta = (BlueprintSpawnableComponent))
 class PERIPHERYSYSTEMCOMPONENT_API UPlayerPeripheriesComponent : public UActorComponent
@@ -47,7 +48,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Peripheries|Item Detection", meta = (EditCondition = "bItemDetection", EditConditionHides))
 	TObjectPtr<USphereComponent>		ItemDetection;
-	
+
+	// TODO: Investigate third person physics updates to render overlaps when the character isn't moving, and bUseControllerRotation is on.
+	// The camera logic isn't updating on the client/server for the character's components unless the character is actually moving, so it doesn't activate the overlap functions
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Peripheries|Cone", meta = (EditCondition = "bCone", EditConditionHides))
 	TObjectPtr<UStaticMeshComponent>	PeripheryCone;
 
