@@ -66,22 +66,22 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Peripheries|Cone", meta = (EditCondition = "bCone", EditConditionHides)) TEnumAsByte<ECollisionChannel> PeripheryConeChannel;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Peripheries|Cone", meta = (EditCondition = "bCone", EditConditionHides)) TSubclassOf<AActor> ValidPeripheryConeObjects;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Peripheries|Cone", meta = (EditCondition = "bCone", EditConditionHides)) bool bDebugPeripheryCone;
-	UPROPERTY(BlueprintReadWrite) TObjectPtr<UMaterialInterface> PeripheryConeOriginalMaterial;
 
 	/** Periphery Trace */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Peripheries|Trace", meta = (EditCondition = "bTrace", EditConditionHides)) TEnumAsByte<ETraceTypeQuery> PeripheryLineTraceType;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Peripheries|Trace", meta = (EditCondition = "bTrace", EditConditionHides)) TSubclassOf<AActor> ValidPeripheryTraceObjects;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Peripheries|Trace", meta = (EditCondition = "bTrace", EditConditionHides)) float PeripheryTraceDistance;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Peripheries|Trace", meta = (EditCondition = "bTrace", EditConditionHides)) FVector PeripheryTraceOffset;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Peripheries|Trace", meta = (EditCondition = "bTrace", EditConditionHides)) float PeripheryTraceForwardOffset;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Peripheries|Trace", meta = (EditCondition = "bTrace", EditConditionHides)) bool TraceShouldIgnoreOwnerActors;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Peripheries|Trace", meta = (EditCondition = "bTrace", EditConditionHides)) bool bDebugPeripheryTrace;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Peripheries|Trace", meta = (EditCondition = "bTrace", EditConditionHides)) bool bDrawTraceDebug;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Peripheries|Trace", meta = (EditCondition = "bDrawTraceDebug", EditConditionHides)) FColor TraceColor = FColor::Silver;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Peripheries|Trace", meta = (EditCondition = "bDrawTraceDebug", EditConditionHides)) FColor TraceHitColor = FColor::Emerald;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Peripheries|Trace", meta = (EditCondition = "bDrawTraceDebug", EditConditionHides)) float TraceDuration = 0.1;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Peripheries|Trace", meta = (EditCondition = "bTrace && bDrawTraceDebug", EditConditionHides)) FColor TraceColor = FColor::Silver;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Peripheries|Trace", meta = (EditCondition = "bTrace && bDrawTraceDebug", EditConditionHides)) FColor TraceHitColor = FColor::Emerald;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Peripheries|Trace", meta = (EditCondition = "bTrace && bDrawTraceDebug", EditConditionHides)) float TraceDuration = 0.1;
 	UPROPERTY(BlueprintReadWrite) TObjectPtr<AActor> TracedActor;
 	UPROPERTY(BlueprintReadWrite) TObjectPtr<AActor> PreviousTracedActor;
+	UPROPERTY(BlueprintReadWrite) bool bIsPreviousTraceValidPeripheryObject;
 	
 	/** Other */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Peripheries|Other", meta = (EditCondition = "bRadius || bTrace || bItemDetection || bCone", EditConditionHides)) EHandlePeripheryLogic ActivationPhase;
@@ -132,9 +132,19 @@ protected:
 //----------------------------------------------------------------------------------------------------------------------//
 protected:
 	/**
+	 * The trace logic for the line trace periphery. This creates a trace returns the result. \n\n
+	 * This function is called during HandlePeripheryLineTrace()
+	 * @remark Adjust this for handling your own logic for the trace \n
+	 * @remark Use PeripheryTraceOffset for handling camera offsets and other values for the trace (so you don't have to create a custom function)
+	 */
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Peripheries|Trace") void PeripheryLineTrace(FHitResult& Result);
+	virtual void PeripheryLineTrace_Implementation(FHitResult& Result);
+	
+	/**
 	 * The overlap logic for the line trace periphery. This creates a trace that keeps track of the current item the player is aiming at. \n\n
 	 * Activates delegate the delegate functions ObjectInPeripheryTrace() and ObjectOutsideOfPeripheryTrace() when a valid object is within or outside of the trace \n\n
-	 * @remarks Adjust this for handling your own logic for finding valid things within the player's periphery
+	 * @remark Adjust this for handling your own logic for finding valid things within the player's periphery \n
+	 * @remark Use PeripheryTraceOffset for handling camera offsets and other values for the trace
 	 */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Peripheries|Trace") void HandlePeripheryLineTrace();
 	virtual void HandlePeripheryLineTrace_Implementation();
@@ -156,9 +166,10 @@ protected:
 	
 	/** The overlap function for items outside of the player's item detection. Adjust what items you find with IsValidItemDetected(), and the settings in the blueprint */
 	UFUNCTION() virtual void OnExitItemDetection(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
 	
 	/**
-	 * The overlap function to handle checking for valid items within the periphery radius. Adjust this for handling your own logic for finding valid things within the player's periphery. \n\n
+	 * The overlap function to handle checking for valid objects within the periphery radius. Adjust this for handling your own logic for finding valid things within the player's periphery. \n\n
 	 * Activates delegate the delegate functions ObjectInPlayerRadius() and ObjectOutsideOfPlayerRadius() when a valid object is within or outside of the radius \n\n
 	 * @remarks Adjust this for handling your own logic for finding valid things within the player's periphery
 	 */
@@ -172,9 +183,16 @@ protected:
 		const FHitResult& SweepResult = FHitResult()
 	);
 	
+	/**
+	 * The overlap function to handle checking for valid items within the periphery trace. Adjust this for handling your own logic for finding valid things within the player's periphery. \n\n
+	 * Activates delegate the delegate functions ObjectInPeripheryTrace() and ObjectOutsideOfPeripheryTrace() when a valid object is within or outside of the radius \n\n
+	 * @remarks Adjust this for handling your own logic for finding valid things within the player's periphery
+	 */
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Peripheries|Radius") bool IsValidTracedObject(AActor* OtherActor, const FHitResult& HitResult);
+	virtual bool IsValidTracedObject_Implementation(AActor* OtherActor, const FHitResult& HitResult);
 	
 	/**
-	 * The overlap function to handle checking for valid items within the periphery radius. Adjust this for handling your own logic for finding valid things within the player's periphery. \n\n
+	 * The overlap function to handle checking for valid objects within the periphery cone. Adjust this for handling your own logic for finding valid things within the player's periphery. \n\n
 	 * Activates delegate the delegate functions ObjectInPeripheryCone() and ObjectOutsideOfPeripheryCone() when a valid object is within or outside of the cone \n\n
 	 * @remarks Adjust this for handling your own logic for finding valid things within the player's periphery
 	 */
@@ -187,7 +205,6 @@ protected:
 		bool bFromSweep = false,
 		const FHitResult& SweepResult = FHitResult()
 	);
-	
 	
 	/**
 	 * The overlap function to handle detecting valid items. Adjust this for handling your own logic for finding valid things for item detection. \n\n

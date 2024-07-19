@@ -16,8 +16,8 @@ UPlayerPeripheriesComponent::UPlayerPeripheriesComponent(const FObjectInitialize
 {
 	// Component logic
 	PrimaryComponentTick.TickGroup = TG_DuringPhysics;
-	PrimaryComponentTick.bCanEverTick = false;
-	PrimaryComponentTick.bStartWithTickEnabled = false;
+	PrimaryComponentTick.bCanEverTick = true;
+	PrimaryComponentTick.bStartWithTickEnabled = true;
 	SetIsReplicatedByDefault(true);
 	
 	// Periphery components
@@ -92,7 +92,7 @@ UPlayerPeripheriesComponent::UPlayerPeripheriesComponent(const FObjectInitialize
 	PeripheryLineTraceType = TraceTypeQuery1;
 	ValidPeripheryTraceObjects = AActor::StaticClass();
 	PeripheryTraceDistance = 6400;
-	PeripheryTraceOffset = FVector(0.0f, 0.0f, 34.0f);
+	PeripheryTraceForwardOffset = 34.0;
 	TraceShouldIgnoreOwnerActors = true;
 }
 
@@ -175,11 +175,8 @@ void UPlayerPeripheriesComponent::TickComponent(float DeltaTime, ELevelTick Tick
 
 
 #pragma region Periphery functions
-void UPlayerPeripheriesComponent::HandlePeripheryLineTrace_Implementation()
+void UPlayerPeripheriesComponent::PeripheryLineTrace_Implementation(FHitResult& Result)
 {
-	GetCharacter();
-	PreviousTracedActor = TracedActor; // Cached for on exit traces
-	
 	FVector_NetQuantize10 AimLocation = GetOwner()->GetActorLocation();
 	FVector_NetQuantize10 AimForwardVector = GetOwner()->GetActorForwardVector();
 	
@@ -195,24 +192,28 @@ void UPlayerPeripheriesComponent::HandlePeripheryLineTrace_Implementation()
 			AimForwardVector // The forward vector (where the vector is aiming)
 		);
 	}
+
+	AimLocation = AimLocation + (AimForwardVector * PeripheryTraceForwardOffset);
+	const FVector_NetQuantize AimDirection = AimLocation + (AimForwardVector * PeripheryTraceDistance); // This calculation is an fvector from our crosshair outwards
+	const FVector StartLocation = AimLocation;
 	
-	const FVector_NetQuantize AimDirection = AimLocation + PeripheryTraceOffset + AimForwardVector * PeripheryTraceDistance; // This calculation is an fvector from our crosshair outwards
-	FVector StartLocation = AimLocation;
-	
-	FHitResult HitResult;
 	UKismetSystemLibrary::LineTraceSingle(
 		GetWorld(), StartLocation, AimDirection, PeripheryLineTraceType, false,  IgnoredActors,
-		bDrawTraceDebug ? EDrawDebugTrace::ForDuration : EDrawDebugTrace::None, HitResult, true, TraceColor, TraceHitColor, TraceDuration
+		bDrawTraceDebug ? EDrawDebugTrace::ForDuration : EDrawDebugTrace::None, Result, true, TraceColor, TraceHitColor, TraceDuration
 	);
-	
-	if (bDebugPeripheryTrace && HitResult.bBlockingHit) DrawDebugSphere(GetWorld(), HitResult.ImpactPoint, 12.f, 12, FColor::Red, false, TraceDuration);
-	else HitResult.ImpactPoint = AimDirection;
-	
+}
+
+
+void UPlayerPeripheriesComponent::HandlePeripheryLineTrace_Implementation()
+{
+	GetCharacter();
+
+	FHitResult TraceResult;
+	PeripheryLineTrace(TraceResult);
 
 	// Periphery logic
-	TracedActor = HitResult.GetActor();
-	bool bIsPeripheryObject = TracedActor && TracedActor->GetClass()->ImplementsInterface(UPeripheryObjectInterface::StaticClass());
-	bool bIsPreviousTracePeripheryObject = PreviousTracedActor && PreviousTracedActor->GetClass()->ImplementsInterface(UPeripheryObjectInterface::StaticClass());
+	TracedActor = TraceResult.GetActor();
+	const bool bIsTraceValidPeripheryObject = IsValidTracedObject(TracedActor, TraceResult);
 	
 	// Only activate the enter overlap logic once (this also handles if they aren't already aiming at something, and still aren't)
 	if (TracedActor == PreviousTracedActor) return;
@@ -220,14 +221,19 @@ void UPlayerPeripheriesComponent::HandlePeripheryLineTrace_Implementation()
 	// if the player isn't already aiming at anything
 	if (!PreviousTracedActor)
 	{
-		if (TracedActor && bIsPeripheryObject)
+		if (TracedActor && bIsTraceValidPeripheryObject)
 		{
-			IPeripheryObjectInterface::Execute_WithinPlayerTracePeriphery(TracedActor, Player, FindPeripheryType(TracedActor));
-			ObjectInPeripheryTrace.Broadcast(TracedActor, Player, HitResult);
+			// If this is a periphery object with custom logic, activate the functions
+			const bool bPeripheryInterface = TracedActor->GetClass()->ImplementsInterface(UPeripheryObjectInterface::StaticClass());
+			if (bPeripheryInterface) IPeripheryObjectInterface::Execute_WithinPlayerTracePeriphery(TracedActor, Player, FindPeripheryType(TracedActor));
+
+			// Periphery Trace delegates
+			ObjectInPeripheryTrace.Broadcast(TracedActor, Player, TraceResult);
 
 			if (bDebugPeripheryTrace)
 			{
-				UE_LOGFMT(PeripheryLog, Log, "{0}: {1} Started looking at {2}", *UEnum::GetValueAsString(GetOwner()->GetLocalRole()), *GetNameSafe(GetOwner()), *GetNameSafe(TracedActor));
+				if (bPeripheryInterface) UE_LOGFMT(PeripheryLog, Log, "{0}: {1} Started looking at {2}(PeripheryInt)", *UEnum::GetValueAsString(GetOwner()->GetLocalRole()), *GetNameSafe(GetOwner()), *GetNameSafe(TracedActor));
+				else UE_LOGFMT(PeripheryLog, Log, "{0}: {1} Started looking at {2}", *UEnum::GetValueAsString(GetOwner()->GetLocalRole()), *GetNameSafe(GetOwner()), *GetNameSafe(TracedActor));
 			}
 		}
 	}
@@ -235,38 +241,58 @@ void UPlayerPeripheriesComponent::HandlePeripheryLineTrace_Implementation()
 	// Transition to aiming at another object, or transition out of aiming at an object
 	else if (TracedActor)
 	{
-		if (bIsPreviousTracePeripheryObject)
+		const bool bPeripheryInterface = TracedActor->GetClass()->ImplementsInterface(UPeripheryObjectInterface::StaticClass());
+		const bool bPreviousActorPeripheryInterface = PreviousTracedActor->GetClass()->ImplementsInterface(UPeripheryObjectInterface::StaticClass());
+		
+		if (bIsPreviousTraceValidPeripheryObject)
 		{
-			IPeripheryObjectInterface::Execute_OutsideOfPlayerTracePeriphery(PreviousTracedActor, Player, FindPeripheryType(PreviousTracedActor));
-			ObjectOutsideOfPeripheryTrace.Broadcast(PreviousTracedActor, Player, HitResult);
+			// If this is a periphery object with custom logic, activate the functions
+			if (bPreviousActorPeripheryInterface) IPeripheryObjectInterface::Execute_OutsideOfPlayerTracePeriphery(PreviousTracedActor, Player, FindPeripheryType(PreviousTracedActor));
+
+			// Periphery Trace delegates
+			ObjectOutsideOfPeripheryTrace.Broadcast(PreviousTracedActor, Player, TraceResult);
 		} 
 
-		if (bIsPeripheryObject)
+		if (bIsTraceValidPeripheryObject)
 		{
-			IPeripheryObjectInterface::Execute_WithinPlayerTracePeriphery(TracedActor, Player, FindPeripheryType(TracedActor));
-			ObjectInPeripheryTrace.Broadcast(TracedActor, Player, HitResult);
+			// If this is a periphery object with custom logic, activate the functions
+			if (bPeripheryInterface) IPeripheryObjectInterface::Execute_WithinPlayerTracePeriphery(TracedActor, Player, FindPeripheryType(TracedActor));
+
+			// Periphery Trace delegates
+			ObjectInPeripheryTrace.Broadcast(TracedActor, Player, TraceResult);
 		}
 		
 		if (bDebugPeripheryTrace)
 		{
-			UE_LOGFMT(PeripheryLog, Log, "{0}: {1} Transitioned looking at {2} to {3}",
-				*UEnum::GetValueAsString(GetOwner()->GetLocalRole()), *GetNameSafe(GetOwner()), *GetNameSafe(PreviousTracedActor), *GetNameSafe(TracedActor)
+			UE_LOGFMT(PeripheryLog, Log, "{0}: {1} Transitioned looking at {2}{3} to {4}{5}", *UEnum::GetValueAsString(GetOwner()->GetLocalRole()), *GetNameSafe(GetOwner()),
+				*GetNameSafe(PreviousTracedActor),
+				bPreviousActorPeripheryInterface ? "(PeripheryInt)" : "",
+				*GetNameSafe(TracedActor),
+				bPeripheryInterface ? "(PeripheryInt)" : ""
 			);
 		}
 	}
 	else
 	{
-		if (bIsPreviousTracePeripheryObject)
+		const bool bPreviousActorPeripheryInterface = PreviousTracedActor->GetClass()->ImplementsInterface(UPeripheryObjectInterface::StaticClass());
+		if (bIsPreviousTraceValidPeripheryObject)
 		{
-			IPeripheryObjectInterface::Execute_OutsideOfPlayerTracePeriphery(PreviousTracedActor, Player, FindPeripheryType(PreviousTracedActor));
-			ObjectOutsideOfPeripheryTrace.Broadcast(PreviousTracedActor, Player, HitResult);
+			// If this is a periphery object with custom logic, activate the functions
+			if (bPreviousActorPeripheryInterface) IPeripheryObjectInterface::Execute_OutsideOfPlayerTracePeriphery(PreviousTracedActor, Player, FindPeripheryType(PreviousTracedActor));
+			
+			// Periphery Trace delegates
+			ObjectOutsideOfPeripheryTrace.Broadcast(PreviousTracedActor, Player, TraceResult);
 		}
 		
 		if (bDebugPeripheryTrace)
 		{
-			UE_LOGFMT(PeripheryLog, Log, "{0}: {1} Stopped looking at {2}", *UEnum::GetValueAsString(GetOwner()->GetLocalRole()), *GetNameSafe(GetOwner()), *GetNameSafe(TracedActor));
+			if (bPreviousActorPeripheryInterface) UE_LOGFMT(PeripheryLog, Log, "{0}: {1} Stopped looking at {2}(PeripheryInt)", *UEnum::GetValueAsString(GetOwner()->GetLocalRole()), *GetNameSafe(GetOwner()), *GetNameSafe(PreviousTracedActor));
+			else UE_LOGFMT(PeripheryLog, Log, "{0}: {1} Stopped looking at {2}", *UEnum::GetValueAsString(GetOwner()->GetLocalRole()), *GetNameSafe(GetOwner()), *GetNameSafe(PreviousTracedActor));
 		}
 	}
+	
+	bIsPreviousTraceValidPeripheryObject = bIsTraceValidPeripheryObject;
+	PreviousTracedActor = TracedActor; // Cached for on exit traces
 }
 
 
@@ -402,6 +428,12 @@ bool UPlayerPeripheriesComponent::IsValidObjectInRadius_Implementation(UPrimitiv
 {
 	if (!OtherActor) return false;
 	return OtherActor->GetClass()->IsChildOf(ValidPeripheryRadiusObjects);
+}
+
+bool UPlayerPeripheriesComponent::IsValidTracedObject_Implementation(AActor* OtherActor, const FHitResult& HitResult)
+{
+	if (!OtherActor) return false;
+	return OtherActor->GetClass()->IsChildOf(ValidPeripheryTraceObjects);
 }
 
 bool UPlayerPeripheriesComponent::IsValidObjectInCone_Implementation(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
