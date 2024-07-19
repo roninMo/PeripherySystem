@@ -73,7 +73,7 @@ UPlayerPeripheriesComponent::UPlayerPeripheriesComponent(const FObjectInitialize
 	
 	/** Periphery Radius */
 	PeripheryRadiusChannel = ECC_Pawn;
-	ValidPeripheryRadiusObjects = AActor::StaticClass();
+	ValidPeripheryRadiusObjects = APawn::StaticClass();
 	PeripheryRadius->ShapeColor = FColor(116, 134, 29, 255);
 	PeripheryRadius->SetSphereRadius(1340);
 	
@@ -86,10 +86,11 @@ UPlayerPeripheriesComponent::UPlayerPeripheriesComponent(const FObjectInitialize
 
 	/** Periphery Cone */
 	PeripheryConeChannel = ECC_Pawn;
-	ValidPeripheryConeObjects = AActor::StaticClass();
+	ValidPeripheryConeObjects = APawn::StaticClass();
 
 	/** Periphery Trace */
-	PeripheryLineTraceType = TraceTypeQuery1;
+	PeripheryLineTraceObjectTypes.Add(EObjectTypeQuery::ObjectTypeQuery2);
+	PeripheryLineTraceObjectTypes.Add(EObjectTypeQuery::ObjectTypeQuery3);
 	ValidPeripheryTraceObjects = AActor::StaticClass();
 	PeripheryTraceDistance = 6400;
 	PeripheryTraceForwardOffset = 34.0;
@@ -197,8 +198,8 @@ void UPlayerPeripheriesComponent::PeripheryLineTrace_Implementation(FHitResult& 
 	const FVector_NetQuantize AimDirection = AimLocation + (AimForwardVector * PeripheryTraceDistance); // This calculation is an fvector from our crosshair outwards
 	const FVector StartLocation = AimLocation;
 	
-	UKismetSystemLibrary::LineTraceSingle(
-		GetWorld(), StartLocation, AimDirection, PeripheryLineTraceType, false,  IgnoredActors,
+	UKismetSystemLibrary::LineTraceSingleForObjects(
+		GetWorld(), StartLocation, AimDirection, PeripheryLineTraceObjectTypes, false, IgnoredActors,
 		bDrawTraceDebug ? EDrawDebugTrace::ForDuration : EDrawDebugTrace::None, Result, true, TraceColor, TraceHitColor, TraceDuration
 	);
 }

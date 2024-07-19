@@ -71,7 +71,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Peripheries|Cone", meta = (EditCondition = "bCone", EditConditionHides)) bool bDebugPeripheryCone;
 
 	/** Periphery Trace */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Peripheries|Trace", meta = (EditCondition = "bTrace", EditConditionHides)) TEnumAsByte<ETraceTypeQuery> PeripheryLineTraceType;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Peripheries|Trace", meta = (EditCondition = "bTrace", EditConditionHides)) TArray<TEnumAsByte<EObjectTypeQuery>> PeripheryLineTraceObjectTypes;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Peripheries|Trace", meta = (EditCondition = "bTrace", EditConditionHides)) TSubclassOf<AActor> ValidPeripheryTraceObjects;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Peripheries|Trace", meta = (EditCondition = "bTrace", EditConditionHides)) float PeripheryTraceDistance;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Peripheries|Trace", meta = (EditCondition = "bTrace", EditConditionHides)) float PeripheryTraceForwardOffset;
