@@ -30,3 +30,14 @@ enum class EHandlePeripheryLogic : uint8
 	EP_Server		    	UMETA(DisplayName = "Server"),
 	EP_Client    			UMETA(DisplayName = "Client"),
 };
+
+/**
+ *	How should the periphery component handle searching for valid objects
+ */
+UENUM(BlueprintType)
+enum class EHandleValidPeripheryTypes : uint8
+{
+	EVPT_Classes    		UMETA(DisplayName = "ServerAndClient"),
+	EVPT_Interfaces		    UMETA(DisplayName = "Server"),
+	EVPT_Both		 		UMETA(DisplayName = "None")
+};

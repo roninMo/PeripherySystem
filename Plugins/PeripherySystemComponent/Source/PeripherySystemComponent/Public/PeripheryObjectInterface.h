@@ -15,7 +15,7 @@ class UPeripheryObjectInterface : public UInterface
 };
 
 /**
-  * This logic is executed for objects with a periphery component if the object overlaps with detection components
+  * This logic is executed for objects that need to do something when the player interacts with them.
   * This is useful for updating information safely without any extra complications
  */
 class PERIPHERYSYSTEMCOMPONENT_API IPeripheryObjectInterface
@@ -24,37 +24,35 @@ class PERIPHERYSYSTEMCOMPONENT_API IPeripheryObjectInterface
 
 	
 public:
-	/** Logic when a character registers it within it's periphery */
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Periphery|Radius") 
-	void OnEnterRadiusPeriphery(AActor* SourceCharacter, EPeripheryType PeripheryType);
-	virtual void OnEnterRadiusPeriphery_Implementation(AActor* SourceCharacter, EPeripheryType PeripheryType);
-
-	/** Logic when a character unregisters it within it's periphery */
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Periphery|Radius") 
-	void OnExitRadiusPeriphery(AActor* SourceCharacter, EPeripheryType PeripheryType);
-
-	virtual void OnExitRadiusPeriphery_Implementation(AActor* SourceCharacter, EPeripheryType PeripheryType);
-	
-	/** Logic when a character's periphery cone registers the object */
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Periphery|Cone") 
-	void OnEnterConePeriphery(AActor* SourceCharacter, EPeripheryType PeripheryType);
-	virtual void OnEnterConePeriphery_Implementation(AActor* SourceCharacter, EPeripheryType PeripheryType);
-
-	/** Logic when a character's periphery cone unregisters the object */
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Periphery|Cone") 
-	void OnExitConePeriphery(AActor* SourceCharacter, EPeripheryType PeripheryType);
-
-	virtual void OnExitConePeriphery_Implementation(AActor* SourceCharacter, EPeripheryType PeripheryType);
-	
-	/** Logic when a character's trace registers the object */
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Periphery|Trace") 
-	void OnEnterLineTracePeriphery(AActor* SourceCharacter, EPeripheryType PeripheryType);
-	virtual void OnEnterLineTracePeriphery_Implementation(AActor* SourceCharacter, EPeripheryType PeripheryType);
-
-	/** Logic when a character's trace unregisters the object */
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Periphery|Trace") 
-	void OnExitLineTracePeriphery(AActor* SourceCharacter, EPeripheryType PeripheryType);
-	virtual void OnExitLineTracePeriphery_Implementation(AActor* SourceCharacter, EPeripheryType PeripheryType);
+	// /** Logic when a character registers it within it's periphery */
+	// UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Peripheries|Radius", DisplayName = "(Periphery Object) OnEnterRadiusPeriphery") 
+	// void WithinPlayerRadiusPeriphery(AActor* SourceCharacter, EPeripheryType PeripheryType);
+	// virtual void WithinPlayerRadiusPeriphery_Implementation(AActor* SourceCharacter, EPeripheryType PeripheryType);
+	//
+	// /** Logic when a character unregisters it within it's periphery */
+	// UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Peripheries|Radius", DisplayName = "(Periphery Object) OnExitRadiusPeriphery") 
+	// void OutsideOfPlayerRadiusPeriphery(AActor* SourceCharacter, EPeripheryType PeripheryType);
+	// virtual void OutsideOfPlayerRadiusPeriphery_Implementation(AActor* SourceCharacter, EPeripheryType PeripheryType);
+	//
+	// /** Logic when a character's periphery cone registers the object */
+	// UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Peripheries|Cone", DisplayName = "(Periphery Object) OnEnterConePeriphery") 
+	// void WithinPlayerConePeriphery(AActor* SourceCharacter, EPeripheryType PeripheryType);
+	// virtual void WithinPlayer_Implementation(AActor* SourceCharacter, EPeripheryType PeripheryType);
+	//
+	// /** Logic when a character's periphery cone unregisters the object */
+	// UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Peripheries|Cone", DisplayName = "(Periphery Object) OnExitConePeriphery") 
+	// void OutsideOfConePeriphery(AActor* SourceCharacter, EPeripheryType PeripheryType);
+	// virtual void OutsideOfConePeriphery_Implementation(AActor* SourceCharacter, EPeripheryType PeripheryType);
+	//
+	// /** Logic when a character's trace registers the object */
+	// UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Peripheries|Trace", DisplayName = "(Periphery Object) OnEnterLineTracePeriphery") 
+	// void WithinPlayerTracePeriphery(AActor* SourceCharacter, EPeripheryType PeripheryType);
+	// virtual void WithinPlayerTracePeriphery_Implementation(AActor* SourceCharacter, EPeripheryType PeripheryType);
+	//
+	// /** Logic when a character's trace unregisters the object */
+	// UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Peripheries|Trace", DisplayName = "(Periphery Object) OnExitLineTracePeriphery") 
+	// void OutsideOfPlayerTracePeriphery(AActor* SourceCharacter, EPeripheryType PeripheryType);
+	// virtual void OutsideOfPlayerTracePeriphery_Implementation(AActor* SourceCharacter, EPeripheryType PeripheryType);
 
 	
 };

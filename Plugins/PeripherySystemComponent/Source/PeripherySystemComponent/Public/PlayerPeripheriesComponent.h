@@ -24,10 +24,10 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnItemOverlapEndDelegate, AActor*
 
 
 /**
- * Class for handling interaction with certain objects within the player's periphery.
- * @note there's logic for handling what happens when a player finds an object, and you're able to customize the behavior for different objects
- * @ref You still need to handle the majority of the logic for building up the components, it only takes a moment to setup the configuration
- *		- Configure the components to link to the character, InitPeripheryInformation, Blueprint delegates, and periphery functions customization
+ * Class for handling interaction with certain objects within the player's periphery. \n\n
+ * Just adjust the kinds of periphery you want to use, their detection, and what classes they search for, and check that they run the InitPeripheryInformation() function and you're good
+ * @note There's also a periphery interface for objects having their own logic when they're within the player's periphery
+ * @remarks Check the plugin's example code or the docs for it's features and how to configure things
  */
 UCLASS( ClassGroup=(Periphery), meta=(BlueprintSpawnableComponent) )
 class PERIPHERYSYSTEMCOMPONENT_API UPlayerPeripheriesComponent : public UActorComponent
@@ -52,29 +52,32 @@ protected:
 
 
 	/** Periphery Radius */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Radius", meta = (EditCondition = "bRadius", EditConditionHides))
-	TEnumAsByte<ECollisionChannel> PeripheryRadiusChannel = ECC_Pawn;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Radius", meta = (EditCondition = "bRadius", EditConditionHides)) TEnumAsByte<ECollisionChannel> PeripheryRadiusChannel;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Radius", meta = (EditCondition = "bRadius", EditConditionHides)) TSubclassOf<AActor> ValidPeripheryRadiusObjects;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Radius", meta = (EditCondition = "bRadius", EditConditionHides)) TSubclassOf<AActor> ValidPeripheryRadiusInterface;
+	
 
 	/** Item Detection */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Item Detection", meta = (EditCondition = "bItemDetection", EditConditionHides))
-	TEnumAsByte<ECollisionChannel> ItemDetectionChannel = ECC_GameTraceChannel1;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Item Detection", meta = (EditCondition = "bItemDetection", EditConditionHides)) TEnumAsByte<ECollisionChannel> ItemDetectionChannel;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Item Detection", meta = (EditCondition = "bRadius", EditConditionHides)) TSubclassOf<AActor> ValidItemDetectionObjects;
 
 	/** Periphery Cone */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Cone", meta = (EditCondition = "bCone", EditConditionHides))
-	TEnumAsByte<ECollisionChannel> PeripheryConeChannel = ECC_Pawn;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Cone", meta = (EditCondition = "bCone", EditConditionHides)) TEnumAsByte<ECollisionChannel> PeripheryConeChannel;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Cone", meta = (EditCondition = "bRadius", EditConditionHides)) TSubclassOf<AActor> ValidPeripheryConeObjects;
 
 	/** Periphery Trace */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Trace", meta = (EditCondition = "bTrace", EditConditionHides)) TEnumAsByte<ETraceTypeQuery> PeripheryLineTraceType = TraceTypeQuery1;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Trace", meta = (EditCondition = "bTrace", EditConditionHides)) float PeripheryTraceDistance = 6400;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Trace", meta = (EditCondition = "bTrace", EditConditionHides)) FVector PeripheryTraceOffset = FVector(0.0f, 0.0f, 34.0f);
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Trace", meta = (EditCondition = "bTrace", EditConditionHides)) TEnumAsByte<ETraceTypeQuery> PeripheryLineTraceType;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Trace", meta = (EditCondition = "bRadius", EditConditionHides)) TSubclassOf<AActor> ValidPeripheryTraceObjects;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Trace", meta = (EditCondition = "bTrace", EditConditionHides)) float PeripheryTraceDistance;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Trace", meta = (EditCondition = "bTrace", EditConditionHides)) FVector PeripheryTraceOffset;
 	UPROPERTY(BlueprintReadWrite) TObjectPtr<AActor> TracedActor;
 	UPROPERTY(BlueprintReadWrite) TObjectPtr<AActor> PreviousTracedActor;
 	
 	/** Other */
 	UPROPERTY(BlueprintReadWrite) TArray<AActor*> IgnoredActors;
 	UPROPERTY(BlueprintReadWrite) ACharacter* Player;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Other", meta = (EditCondition = "bRadius || bTrace || bItemDetection || bCone", EditConditionHides)) bool TraceShouldIgnoreOwnerActors = true;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Other", meta = (EditCondition = "bRadius || bTrace || bItemDetection || bCone", EditConditionHides)) EHandlePeripheryLogic ActivationPhase = EHandlePeripheryLogic::EP_ServerAndClient;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Other", meta = (EditCondition = "bTrace", EditConditionHides)) bool TraceShouldIgnoreOwnerActors;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Other", meta = (EditCondition = "bRadius || bTrace || bItemDetection || bCone", EditConditionHides)) EHandlePeripheryLogic ActivationPhase;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Radius|Debug", meta = (EditCondition = "bRadius", EditConditionHides)) bool bDebugPeripheryRadius;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Periphery|Item Detection|Debug", meta = (EditCondition = "bItemDetection", EditConditionHides)) bool bDebugItemDetection;
@@ -127,35 +130,89 @@ protected:
 // Periphery functions																									//
 //----------------------------------------------------------------------------------------------------------------------//
 protected:
-	/** The enter and exit overlap logic for the line trace periphery */
-	UFUNCTION() virtual void HandlePeripheryLineTrace();
 	
-	/** The overlap function for entering the periphery radius */
-	UFUNCTION() virtual void EnterPeripheryRadius(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	/** The overlap function for items within the player's periphery radius. Adjust what items you find with IsValidObjectInRadius(), and the settings in the blueprint */
+	UFUNCTION() virtual void OnEnterRadiusPeriphery(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 	
-	/** The overlap function for entering the periphery radius */
-	UFUNCTION() virtual void ExitPeripheryRadius(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
-
-	/** The overlap function for entering the periphery radius */
-	UFUNCTION() virtual void EnterPeripheryCone(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-
-	/** The overlap function for entering the periphery radius */
-	UFUNCTION() virtual void ExitPeripheryCone(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
-
-
-//----------------------------------------------------------------------------------------------------------------------//
-// Item detection																										//
-//----------------------------------------------------------------------------------------------------------------------//
-protected:
-	/** Adds any items in the player's radius to the item's array, and sets the active item if it's currently null */
-	UFUNCTION() virtual void OnEnterItemRadius(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-
-	/** Removes items outside of the player's radius, and sets the active item to null if that's the current object */
-	UFUNCTION() virtual void OnExitItemRadius(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+	/** The overlap function for items outside of the player's periphery radius. Adjust what items you find with IsValidObjectInRadius(), and the settings in the blueprint */
+	UFUNCTION() virtual void OnExitRadiusPeriphery(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 	
+	// /**
+	//  * The overlap logic for the line trace periphery. This creates a trace that keeps track of the current item the player is aiming at. \n\n
+	//  * Activates delegate the delegate functions ObjectInPeripheryTrace() and ObjectOutsideOfPeripheryTrace() when a valid object is within or outside of the trace
+	//  * @remarks Adjust this for handling your own logic for finding valid things within the player's periphery
+	//  */
+	// UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Peripheries|Trace") void HandlePeripheryLineTrace();
+	// virtual void HandlePeripheryLineTrace_Implementation();
+	//
+	// /**
+	//  * The overlap function to handle checking for valid items within the periphery radius. Adjust this for handling your own logic for finding valid things within the player's periphery.
+	//  * Activates delegate the delegate functions ObjectInPlayerRadius() and ObjectOutsideOfPlayerRadius() when a valid object is within or outside of the radius
+	//  * @remarks Adjust this for handling your own logic for finding valid things within the player's periphery
+	//  */
+	// UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Peripheries|Radius") bool IsValidObjectInRadius(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep = false, const FHitResult& SweepResult = FHitResult());
+	// virtual bool IsValidObjectInRadius_Implementation(
+	// 	UPrimitiveComponent* OverlappedComponent,
+	// 	AActor* OtherActor,
+	// 	UPrimitiveComponent* OtherComp,
+	// 	int32 OtherBodyIndex,
+	// 	bool bFromSweep = false,
+	// 	const FHitResult& SweepResult = FHitResult()
+	// );
+	//
+	//
+	// /**
+	//  * The overlap function to handle checking for valid items within the periphery radius. Adjust this for handling your own logic for finding valid things within the player's periphery.
+	//  * Activates delegate the delegate functions ObjectInPeripheryCone() and ObjectOutsideOfPeripheryCone() when a valid object is within or outside of the cone
+	//  * @remarks Adjust this for handling your own logic for finding valid things within the player's periphery
+	//  */
+	// UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Peripheries|Cone") bool IsValidObjectInCone(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep = false, const FHitResult& SweepResult = FHitResult());
+	// virtual bool IsValidObjectInCone_Implementation(
+	// 	UPrimitiveComponent* OverlappedComponent,
+	// 	AActor* OtherActor,
+	// 	UPrimitiveComponent* OtherComp,
+	// 	int32 OtherBodyIndex,
+	// 	bool bFromSweep = false,
+	// 	const FHitResult& SweepResult = FHitResult()
+	// );
+	//
+	//
+	// /**
+	//  * The overlap function to handle detecting valid items. Adjust this for handling your own logic for finding valid things for item detection.
+	//  * Activates delegate the delegate functions OnItemOverlapBegin() and OnItemOverlapEnd() when a valid item is within or outside of the player's item detection
+	//  * @remarks Adjust this for handling your own logic for finding valid items
+	//  */
+	// UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Peripheries|Item Detection") bool IsValidItemDetected(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep = false, const FHitResult& SweepResult = FHitResult());
+	// virtual bool IsValidItemDetected_Implementation(
+	// 	UPrimitiveComponent* OverlappedComponent,
+	// 	AActor* OtherActor,
+	// 	UPrimitiveComponent* OtherComp,
+	// 	int32 OtherBodyIndex,
+	// 	bool bFromSweep = false,
+	// 	const FHitResult& SweepResult = FHitResult()
+	// );
+	//
+	// /** The overlap function for items within the player's periphery radius. Adjust what items you find with IsValidObjectInRadius(), and the settings in the blueprint */
+	// UFUNCTION() virtual void OnEnterRadiusPeriphery(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	//
+	// /** The overlap function for items outside of the player's periphery radius. Adjust what items you find with IsValidObjectInRadius(), and the settings in the blueprint */
+	// UFUNCTION() virtual void OnExitRadiusPeriphery(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+	//
+	// /** The overlap function for items within the player's periphery radius. Adjust what items you find with IsValidObjectInCone(), and the settings in the blueprint */
+	// UFUNCTION() virtual void OnEnterConePeriphery(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	//
+	// /** The overlap function for items outside of the player's periphery radius. Adjust what items you find with IsValidObjectInCone(), and the settings in the blueprint */
+	// UFUNCTION() virtual void OnExitConePeriphery(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+	//
+	// /** The overlap function for items within the player's item detection. Adjust what items you find with IsValidItemDetected(), and the settings in the blueprint */
+	// UFUNCTION() virtual void OnEnterItemDetection(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	//
+	// /** The overlap function for items outside of the player's item detection. Adjust what items you find with IsValidItemDetected(), and the settings in the blueprint */
+	// UFUNCTION() virtual void OnExitItemDetection(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 	
 //----------------------------------------------------------------------------------------------//
-// Utility																						//
+// Other																						//
 //----------------------------------------------------------------------------------------------//
 protected:
 	/**

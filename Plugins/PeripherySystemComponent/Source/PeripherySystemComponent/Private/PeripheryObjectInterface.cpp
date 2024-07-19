@@ -3,10 +3,26 @@
 
 #include "PeripheryObjectInterface.h"
 
-
-void IPeripheryObjectInterface::OnEnterRadiusPeriphery_Implementation(AActor* SourceCharacter, EPeripheryType PeripheryType) {}
-void IPeripheryObjectInterface::OnExitRadiusPeriphery_Implementation(AActor* SourceCharacter, EPeripheryType PeripheryType) {}
-void IPeripheryObjectInterface::OnEnterConePeriphery_Implementation(AActor* SourceCharacter, EPeripheryType PeripheryType) {}
-void IPeripheryObjectInterface::OnExitConePeriphery_Implementation(AActor* SourceCharacter, EPeripheryType PeripheryType) {}
-void IPeripheryObjectInterface::OnEnterLineTracePeriphery_Implementation(AActor* SourceCharacter, EPeripheryType PeripheryType) {}
-void IPeripheryObjectInterface::OnExitLineTracePeriphery_Implementation(AActor* SourceCharacter, EPeripheryType PeripheryType) {}
+// void IPeripheryObjectInterface::WithinPlayerRadiusPeriphery_Implementation(AActor* SourceCharacter, EPeripheryType PeripheryType)
+// {
+// }
+//
+// void IPeripheryObjectInterface::OutsideOfPlayerRadiusPeriphery_Implementation(AActor* SourceCharacter, EPeripheryType PeripheryType)
+// {
+// }
+//
+// void IPeripheryObjectInterface::WithinPlayer_Implementation(AActor* SourceCharacter, EPeripheryType PeripheryType)
+// {
+// }
+//
+// void IPeripheryObjectInterface::OutsideOfConePeriphery_Implementation(AActor* SourceCharacter, EPeripheryType PeripheryType)
+// {
+// }
+//
+// void IPeripheryObjectInterface::WithinPlayerTracePeriphery_Implementation(AActor* SourceCharacter, EPeripheryType PeripheryType)
+// {
+// }
+//
+// void IPeripheryObjectInterface::OutsideOfPlayerTracePeriphery_Implementation(AActor* SourceCharacter, EPeripheryType PeripheryType)
+// {
+// }
