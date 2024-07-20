@@ -130,16 +130,16 @@ protected:
 
 	/** The duration of the trace */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Peripheries|Trace", meta = (EditCondition = "bTrace && bDrawTraceDebug", EditConditionHides)) float TraceDuration = 0.1;
-	UPROPERTY(BlueprintReadWrite) TObjectPtr<AActor> TracedActor;
-	UPROPERTY(BlueprintReadWrite) TObjectPtr<AActor> PreviousTracedActor;
-	UPROPERTY(BlueprintReadWrite) bool bIsPreviousTraceValidPeripheryObject;
+	UPROPERTY(BlueprintReadWrite, Category = "Peripheries|Trace") TObjectPtr<AActor> TracedActor;
+	UPROPERTY(BlueprintReadWrite, Category = "Peripheries|Trace") TObjectPtr<AActor> PreviousTracedActor;
+	UPROPERTY(BlueprintReadWrite, Category = "Peripheries|Trace") bool bIsPreviousTraceValidPeripheryObject;
 
 	
 	/**** Other ****/
 	/** Does the periphery logic run on the client, server, or both? */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Peripheries|Other", meta = (EditCondition = "bRadius || bTrace || bItemDetection || bCone", EditConditionHides)) EHandlePeripheryLogic ActivationPhase;
-	UPROPERTY(BlueprintReadWrite) TArray<AActor*> IgnoredActors;
-	UPROPERTY(BlueprintReadWrite) ACharacter* Player;
+	UPROPERTY(BlueprintReadWrite, Category = "Peripheries|Other") TArray<AActor*> IgnoredActors;
+	UPROPERTY(BlueprintReadWrite, Category = "Peripheries|Utilitiy") ACharacter* Player;
 
 	
 public:	
@@ -151,20 +151,20 @@ public:
 	  *	Information that is not persistent and the player should not keep track of, but needs to be updated if the player interacts or comes within "range" of a object, this is where this might come in handy  
 	 */
 	/** Radius delegates */
-	UPROPERTY(BlueprintAssignable) FObjectInRadiusDelegate ObjectInPlayerRadius;
-	UPROPERTY(BlueprintAssignable) FObjectOutsideOfRadiusDelegate ObjectOutsideOfPlayerRadius;
+	UPROPERTY(BlueprintAssignable, Category = "Peripheries|Radius") FObjectInRadiusDelegate ObjectInPlayerRadius;
+	UPROPERTY(BlueprintAssignable, Category = "Peripheries|Radius") FObjectOutsideOfRadiusDelegate ObjectOutsideOfPlayerRadius;
 	
 	/** Item Detection delegates */
-	UPROPERTY(BlueprintAssignable) FOnItemOverlapBeginDelegate OnItemOverlapBegin;
-	UPROPERTY(BlueprintAssignable) FOnItemOverlapEndDelegate OnItemOverlapEnd;
+	UPROPERTY(BlueprintAssignable, Category = "Peripheries|Item Detection") FOnItemOverlapBeginDelegate OnItemOverlapBegin;
+	UPROPERTY(BlueprintAssignable, Category = "Peripheries|Item Detection") FOnItemOverlapEndDelegate OnItemOverlapEnd;
     	
 	/** Periphery Cone delegates */
-	UPROPERTY(BlueprintAssignable) FObjectInPeripheryConeDelegate ObjectInPeripheryCone;
-	UPROPERTY(BlueprintAssignable) FObjectOutsideOfPeripheryConeDelegate ObjectOutsideOfPeripheryCone;
+	UPROPERTY(BlueprintAssignable, Category = "Peripheries|Cone") FObjectInPeripheryConeDelegate ObjectInPeripheryCone;
+	UPROPERTY(BlueprintAssignable, Category = "Peripheries|Cone") FObjectOutsideOfPeripheryConeDelegate ObjectOutsideOfPeripheryCone;
 	
 	/** Periphery Trace delegates */
-	UPROPERTY(BlueprintAssignable) FObjectInPeripheryTraceDelegate ObjectInPeripheryTrace;
-	UPROPERTY(BlueprintAssignable) FObjectOutsideOfPeripheryTraceDelegate ObjectOutsideOfPeripheryTrace;
+	UPROPERTY(BlueprintAssignable, Category = "Peripheries|Trace") FObjectInPeripheryTraceDelegate ObjectInPeripheryTrace;
+	UPROPERTY(BlueprintAssignable, Category = "Peripheries|Cone") FObjectOutsideOfPeripheryTraceDelegate ObjectOutsideOfPeripheryTrace;
 
 
 	
@@ -173,7 +173,7 @@ protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	
 	/** Add collision events for the locally controlled player */
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "Peripheries|Utilities")
 	virtual void ConfigurePeripheryCollision(UPrimitiveComponent* Component, bool bCollision);
 
 	/** This is used for performing accurate traces for anything the player is aiming at */
@@ -281,9 +281,9 @@ protected:
 protected:
 	/**
 	 * Configures the periphery component's logic for the player \n\n
-	 * @remarks this needs to be called once the character has been initialized
+	 * @remarks This is called automatically if bInitPeripheryDuringBeginPlay is set to true. Otherwise, this needs to be called once the character has been initialized
 	 */
-	UFUNCTION(BlueprintCallable) virtual void InitPeripheryInformation();
+	UFUNCTION(BlueprintCallable, Category = "Peripheries|Utilities") virtual void InitPeripheryInformation();
 	
 	/** Helper function for determining the type of overlay that should be used */
 	UFUNCTION() virtual EPeripheryType FindPeripheryType(TScriptInterface<IPeripheryObjectInterface> PeripheryObject) const;
@@ -291,17 +291,18 @@ protected:
 
 
 public:
-	UFUNCTION(BlueprintCallable) virtual bool ActivatePeripheryLogic(const EHandlePeripheryLogic HandlePeripheryLogic) const;
-	UFUNCTION(BlueprintCallable) virtual TScriptInterface<IPeripheryObjectInterface> GetTracedObject() const;
-	UFUNCTION(BlueprintCallable) virtual USphereComponent* GetPeripheryRadius();
-	UFUNCTION(BlueprintCallable) virtual UStaticMeshComponent* GetPeripheryCone();
-	UFUNCTION(BlueprintCallable) virtual USphereComponent* GetItemDetection();
+	/** Used for networking. Determines whether the logic should be activated based on the argument passed in and if it's the client or server character */
+	UFUNCTION(BlueprintCallable, Category = "Peripheries|Utilities") virtual bool ActivatePeripheryLogic(const EHandlePeripheryLogic HandlePeripheryLogic) const;
+	UFUNCTION(BlueprintCallable, Category = "Peripheries|Utilities") virtual TScriptInterface<IPeripheryObjectInterface> GetTracedObject() const;
+	UFUNCTION(BlueprintCallable, Category = "Peripheries|Utilities") virtual USphereComponent* GetPeripheryRadius();
+	UFUNCTION(BlueprintCallable, Category = "Peripheries|Utilities") virtual UStaticMeshComponent* GetPeripheryCone();
+	UFUNCTION(BlueprintCallable, Category = "Peripheries|Utilities") virtual USphereComponent* GetItemDetection();
 
 	/** Utility functions for checking if playing in editor */
-	UFUNCTION(BlueprintCallable) bool IsPlayingInEditor(UObject* WorldContextObject) const;
+	UFUNCTION(BlueprintCallable, Category = "Utilities|Platform") bool IsPlayingInEditor(UObject* WorldContextObject) const;
 	
 	/** Utility functions for checking if playing in game */
-	UFUNCTION(BlueprintCallable) bool IsPlayingInGame(UObject* WorldContextObject) const;
+	UFUNCTION(BlueprintCallable, Category = "Utilities|Platform") bool IsPlayingInGame(UObject* WorldContextObject) const;
 
 	
 };
