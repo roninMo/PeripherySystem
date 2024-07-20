@@ -1,6 +1,6 @@
 # Overview
 
-The `Periphery System Component` is a component that helps with interacting with things within the player's periphery. It has built in logic you can adjust for finding items based on Objects/Channels, class references, and delegate functions for when you find different items for retrieval and other actions. It has built in networking for Client and Server or both, and debugging to make things easy. 
+The `Periphery System` is a component that helps with interacting with things within the player's periphery. It has built in logic you can adjust for finding items based on Objects/Channels, class references, and delegate functions for when you find different items for retrieval and other actions. It has built in networking for Client and Server or both, and debugging to make things easy. 
 
 ![Periphery System](/images/PeripherySystemImage.png)
 
