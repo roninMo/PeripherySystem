@@ -1,5 +1,7 @@
 # Overview
-The Periphery System is a component that helps with interacting with things within the player's periphery. It has built in logic you can adjust for finding items based on Channels/Objects, and class references, and delegate functions for when you find different items for retrieval and other actions. It has built in networking for Client and Server or both, and debugging to make things easy. 
+The `Periphery System` is a component that helps with interacting with things within the player's periphery. It has built in logic you can adjust for finding items based on Objects/Channels, class references, and delegate functions for when you find different items for retrieval and other actions. It has built in networking for Client and Server or both, and debugging to make things easy. 
+
+![PeripherySystemImage](https://github.com/user-attachments/assets/77f06e75-454a-4229-bb36-3b4d5f562fd2)
 
 It should save you a lot of time when you're trying to create things like highlighting other characters, keeping track of target lock characters, npc logic, quests and storing other objects and values for different logic, and plenty of other things you can think of
 
