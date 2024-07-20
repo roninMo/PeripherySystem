@@ -3,7 +3,7 @@
 	"Version": 1,
 	"VersionName": "1.0",
 	"FriendlyName": "PeripherySystemComponent",
-	"Description": "A periphery system for players interecting with objects in the world easily",
+	"Description": "A periphery system for players to capture and interact with objects in the world, and logic for handling everything without complications",
 	"Category": "Other",
 	"CreatedBy": "Donamaru",
 	"CreatedByURL": "",
