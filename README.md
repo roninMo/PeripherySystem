@@ -12,7 +12,7 @@ It should save you a lot of time when you're trying to create things like highli
 
 
 <br><br/>
-# Quick Tutorial
+# Setup
 
   - add the `PeripherySystemComponent` to your character
   - adjust the kinds of periphery you want to use, their detection, and check that you run the `InitPeripheryInformation()` or have set `bInitPeripheryDuringBeginPlay` to true
