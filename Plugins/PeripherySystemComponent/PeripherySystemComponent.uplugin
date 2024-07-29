@@ -18,7 +18,7 @@
 		{
 			"Name": "PeripherySystemComponent",
 			"Type": "Runtime",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "PreDefault"
 		}
 	]
 }
