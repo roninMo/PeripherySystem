@@ -90,8 +90,7 @@ Here's a list of the periphery functions
 
 
 #### Periphery Interface Functions
-![Periphery System](/images/PeripheryTutorial_9.png)
-![PeripheryTutorial_9](https://github.com/user-attachments/assets/cc78ce1f-6689-47fc-a467-377ef890eabf)
+![Periphery System](/images/PeripheryTutorial_12.png)
 
 
 
