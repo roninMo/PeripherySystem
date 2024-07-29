@@ -4,7 +4,7 @@
 	"VersionName": "1.0",
 	"FriendlyName": "Periphery System",
 	"Description": "A periphery system for players to capture and interact with objects in the world, and logic for handling everything without complications",
-	"Category": "Periphery",
+	"Category": "Base",
 	"CreatedBy": "Steve Erwin",
 	"CreatedByURL": "",
 	"DocsURL": "https://roninmo.github.io/PeripherySystem/",
